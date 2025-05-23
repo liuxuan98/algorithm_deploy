@@ -38,6 +38,12 @@ option(ENABLE_OPENVINO_INFERENCE  "Enable OpenVINO NetWork Inference" ON)  ## op
 # # compole kernel submodule
 option(ENABLE_KERNEL "Enable Complie kernel" ON)  ## 编译kernel 部分总开关,must on
 
+option(ENABLE_SAMPLE "Enable Compilie Sample" ON)
+
+# # set 3rd party install
+option(ENABLE_3RD_OPENVINO "Enable 3rd Party" ON)
+option(ENABLE_3RD_OPENCV "Enable 3rd Party" ON)
+
 # # set root_path
 message(${CMAKE_SOURCE_DIR})
 message(${CMAKE_CURRENT_SOURCE_DIR})
@@ -45,6 +51,8 @@ message(${CMAKE_CURRENT_SOURCE_DIR})
 set(ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 message(STATUS "current ROOT_PATH dir is: ${ROOT_PATH}")
 
+# folders
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # # define
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "set build type to release" FORCE)
@@ -64,7 +72,7 @@ message(STATUS "\tBUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message(STATUS ">>>>>>>>>>>>>")
 
 # install path
-set(PROJECT_INSTALL_PATH ${ROOT_PATH}/build/install)
+set(PROJECT_INSTALL_PATH ${ROOT_PATH}/build/install) #路径设定死板是否合适？
 set(CMAKE_INSTALL_PREFIX ${PROJECT_INSTALL_PATH})
 
 #compile
@@ -83,10 +91,11 @@ endif()
 # if(ENABLE_MODULE)
 #     add_subdirectory(module)
 # endif()
+message(STATUS "ENABLE_SAMPLE VALUE = ${ENABLE_SAMPLE}")
 
-# if(ENABLE_SAMPLE)
-#     add_subdirectory(sample)
-# endif()
+if(ENABLE_SAMPLE)
+    add_subdirectory(sample)
+endif()
 
 
 

@@ -4,7 +4,9 @@ namespace rayshape
 {
     namespace device
     {
-        CpuDevice::CpuDevice(DeviceType device_type) : AbstractDevice(device_type)
+        TypeDeviceRegister<CpuDevice> g_cpu_device_register(DEVICE_TYPE_CPU);
+
+        CpuDevice::CpuDevice(DeviceType device_type) : AbstractDevice(device_type) // 已有主体的报错是在声明时候就定义了
         {
         }
 
@@ -12,13 +14,13 @@ namespace rayshape
         {
         }
 
-        ErrorCode CpuDevice::Allocate(size_t size, void **ptr)
+        ErrorCode CpuDevice::Allocate(size_t size, void **handle)
         {
             ErrorCode ret = RS_SUCCESS;
 
-            if (ptr == nullptr)
+            if (handle == nullptr)
             {
-                // 日志
+                // log
                 return RS_INVALID_PARAM;
             }
 
@@ -37,13 +39,13 @@ namespace rayshape
             }
             else
             {
-                // 日志
+                // log
                 return RS_INVALID_PARAM;
             }
             return ret;
         }
 
-        ErrorCode CpuDevice::Free(void handle)
+        ErrorCode CpuDevice::Free(void *handle)
         {
             if (handle)
             {
@@ -53,7 +55,42 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        TypeDeviceRegister<CpuDevice> g_cpu_device_register(DEVICE_TYPE_CPU);
+        ErrorCode CpuDevice::Copy(void *src, void *dst, size_t size,
+                                  void *command_queue)
+        {
+
+            return RS_SUCCESS;
+        }
+
+        ErrorCode CpuDevice::CopyToDevice(void *src, void *dst, size_t size)
+        {
+
+            return RS_SUCCESS;
+        }
+
+        ErrorCode CpuDevice::CopyFromDevice(void *src, void *dst, size_t size)
+        {
+
+            return RS_SUCCESS;
+        }
+
+        ErrorCode CpuDevice::Copy(Buffer *dst, const Buffer *src, void *command_queue)
+        {
+
+            return RS_SUCCESS;
+        }
+
+        ErrorCode CpuDevice::CopyToDevice(Buffer *dst, const Buffer *src, void *command_queue)
+        {
+
+            return RS_SUCCESS;
+        }
+
+        ErrorCode CpuDevice::CopyFromDevice(Buffer *dst, const Buffer *src, void *command_queue)
+        {
+
+            return RS_SUCCESS;
+        }
 
     }
 }

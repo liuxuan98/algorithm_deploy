@@ -21,7 +21,7 @@ namespace rayshape
         // 计算工具计算size
         size_t size = 50;
         // void *ptr = device->allocate(size);
-        blob->buffer = new Buffer(size, device_type); // 内部调用分配
+        blob->buffer = new Buffer(size, device_type,true); // 内部调用分配
 
 
         return blob;

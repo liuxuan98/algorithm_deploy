@@ -12,11 +12,18 @@ namespace rayshape
 
     Buffer::~Buffer()
     {
-        data_ = nullptr;
-        data_alloc_ = nullptr;
+        if (external_)
+        {
+            data_ = nullptr;
+            data_alloc_ = nullptr;
+        }
+        else
+        {
+            // todo
+        }
     }
-
-    Buffer::Buffer(size_t size, DeviceType device_type)
+    // 内部分配
+    Buffer::Buffer(size_t byte_size, DeviceType device_type, bool external_alloc)
     {
         mem_type_ = device_type;
         auto device = GetDevice(device_type);
@@ -24,15 +31,15 @@ namespace rayshape
         {
             // 日志
         }
-        size_ = size;
-        if (size <= 0)
+        size_ = byte_size;
+        if (byte_size <= 0)
         {
             // 日志
         }
 
         void *data_alloc = nullptr;
 
-        ErrorCode err = device->Allocate(size, &data_alloc);
+        ErrorCode err = device->Allocate(byte_size, &data_alloc);
         if (err == RS_SUCCESS)
         {
 
@@ -49,9 +56,11 @@ namespace rayshape
             data_ = nullptr;
             data_alloc_ = nullptr;
         }
+
+        external_ = false;
     }
     // 外部分配的内存外部管理
-    Buffer::Buffer(DeviceType mem_type, bool external_alloc, void *data)
+    Buffer::Buffer(size_t byte_size, DeviceType mem_type, bool external_alloc, void *data)
     {
         if (data == nullptr)
         {
@@ -64,10 +73,18 @@ namespace rayshape
         external_ = external_alloc;
 
         data_ = data;
+
+        size_ = byte_size;
     }
 
-   void* Buffer::GetSrcData(){
+    void *Buffer::GetSrcData()
+    {
         return data_;
-   }
+    }
+
+    bool Buffer::GetAllocFlag() const
+    {
+        return external_;
+    }
 
 }

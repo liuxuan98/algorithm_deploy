@@ -37,8 +37,6 @@ endif()
 if(APPLE)
     #if() 配置一些cmake的条件
 
-
-    
     if(PROCESSOR.arm)
         add_definitions(-mfloat-abi=softfp -mfpu=neon )
     endif()
@@ -122,6 +120,11 @@ if((NOT MSVC) AND ENABLE_SYMBOL_HIDE)
     if((NOT APPLE) AND (NOT WIN32))
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer")
     endif()
+endif()
+
+if(MSVC) #添加编译选项中的相关内容
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4819 /wd4018 /utf-8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4819 /wd4018 /utf-8")
 endif()
 
 ## cxx_11 //tnn
@@ -258,7 +261,7 @@ set(third_lib_all_copy_dir_list)
 set(third_lib_all_copy_file_list)
 set(copy_target_path)
 set(copy_install_path)
-
+# 将这一块内容完善 todo
 if(SYSTEM.Windows)
     if(ENABLE_3RD_OPENVINO)
         list(APPEND third_lib_all_copy_dir_list ${ROOT_PATH}/third_party/openvino/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}/bin/${CMAKE_BUILD_TYPE})
@@ -285,7 +288,7 @@ endif()
 
 
 if(SYSTEM.Windows)
-    set(copy_target_path "${TARGET_RUN_DIR}/bin/CMAKE_BUILD_TYPE")  ## target_path 中所有文件需要打包
+    set(copy_target_path "${TARGET_RUN_DIR}/bin/${CMAKE_BUILD_TYPE}")  ## target_path 中所有文件需要打包
     set(copy_install_path "bin/${CMAKE_BUILD_TYPE}")
     if(NOT PROCESS.arm)
         list(APPEND third_lib_all_copy_dir_list ${ROOT_PATH}/third_party/system_lib/Windows/Release)
@@ -310,9 +313,10 @@ endif()
 foreach(third_lib_path IN LISTS third_lib_all_copy_dir_list)
 
     file(GLOB third_lib_files "${third_lib_path}/*")
-    install(FILES ${third_lib_files} DESTINATION "${copy_target_path}")
+    #install(FILES ${third_lib_files} DESTINATION "${copy_target_path}")
+    install(FILES ${third_lib_files} DESTINATION "${copy_install_path}")
     # 如果使用cpack，install的DESTINATION 不要写绝对路径，不然会打进包里
-    install(FILES ${third_lib_file} DESTINATION "${copy_install_path}")
+    #install(FILES ${third_lib_file} DESTINATION "${copy_install_path}")
 endforeach()
 
 foreach(third_lib_file IN LISTS third_lib_all_copy_file_list)
@@ -342,5 +346,3 @@ if(APPLE)
     ##
 endif()
     
-
-

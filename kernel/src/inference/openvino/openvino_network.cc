@@ -29,24 +29,24 @@ namespace rayshape
         ErrorCode OpenVinoNetWork::Init(const std::string &xml_path, const std::string &bin_path)
         {
             // 应该是有一个json解析的过程
-            //  这里暂时先用xml和对应bin进行初始化后续更改变动
+            // 这里暂时先用xml和对应bin进行初始化后续更改变动
             ErrorCode ret = RS_SUCCESS;
             JsonHandle json_handle = nullptr;
             if ((ret = ParseInputShapes(json_handle)) != RS_SUCCESS)
             {
-                // 日志
+                // log todo
                 return ret;
             }
-
+            device_type_ = DEVICE_TYPE_X86; // 固定设备类型，这个参数实际上通过runtime得到
             if ((ret = InitWithXml(xml_path, bin_path)) != RS_SUCCESS)
             {
-                // 日志
+                // log todo
                 return ret;
             }
 
             if ((ret = Reshape()) != RS_SUCCESS)
             {
-                // 日志
+                // log todo
                 return ret;
             }
 
@@ -58,8 +58,8 @@ namespace rayshape
             return ret;
         }
 
-        void OpenVinoNetWork::DeInit(){
-            
+        void OpenVinoNetWork::DeInit()
+        {
         }
 
         ErrorCode OpenVinoNetWork::InitWithXml(const std::string &xml_path,
@@ -72,7 +72,7 @@ namespace rayshape
             std::string device_name = "CPU";
             if (device_type_ == DEVICE_TYPE_X86)
             {
-                device_name == "CPU";
+                device_name = "CPU";
             }
             else
             {
@@ -85,11 +85,12 @@ namespace rayshape
                 model_ = core_->read_model(xml_path, bin_path);
 
                 // compiled_model_ = core_->compile_model(model_, device_name);
-
                 // infer_request_ = compiled_model_.create_infer_request();
             }
             catch (const ov::Exception &e)
             {
+                //..log
+                printf("read_model openvino model failed: %s\n", e.what());
                 return RS_MODEL_ERROR;
             }
 
@@ -121,7 +122,7 @@ namespace rayshape
                 Dims dims;
                 dims.size = dims_size;
 
-                for (int j = 0; j < dims_size; j++)
+                for (unsigned int j = 0; j < dims_size; j++)
                 {
                     dims.value[i] = 0; // MagicXEJsonIntGet(MagicXEJsonArrayAt(dims_arr, j), 0);
                 }
@@ -159,10 +160,17 @@ namespace rayshape
                 model_->reshape(ov_shape);
             }
             // 完成多个最大输入的reshape
+            try
+            {
+                compiled_model_ = core_->compile_model(model_, "CPU"); // 是否要reset
+                infer_request_ = compiled_model_.create_infer_request();
+            }
+            catch (const ov::Exception &e)
+            {
 
-            compiled_model_ = core_->compile_model(model_, "CPU"); // 是否要reset
-            infer_request_ = compiled_model_.create_infer_request();
-
+                printf("compile openvino model failed: %s\n", e.what());
+                return RS_MODEL_ERROR;
+            }
             return ret;
         }
 
@@ -175,27 +183,34 @@ namespace rayshape
             size_t input_count = inputs.size();
             if (input_count <= 0)
             {
-                // 日志
+                // log todo
                 return RS_INVALID_MODEL;
             }
             input_blob_arr_ = (Blob **)malloc(sizeof(Blob *) * input_count);
             if (input_blob_arr_ == nullptr)
             {
                 // 错误日志
-                return RS_OUTOF_MEMORY;
+                return RS_OUTOFMEMORY;
             }
             memset(input_blob_arr_, 0, sizeof(Blob *) * input_count);
 
             for (const auto input : inputs)
             {
-                const char *name = input.get_any_name().c_str();
+                std::string name_str = input.get_any_name();
+                const char *name = name_str.c_str();
                 if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME)
                 {
                     // 打印日志,
                     ClearBlobArray(); // 清除分配的内存
                     return RS_INVALID_MODEL;
                 }
-                ov::Tensor ov_tensor = infer_request_.get_tensor(std::string(name));
+                ov::Tensor ov_tensor = infer_request_.get_tensor(name_str);
+                // convert input format(layout)
+                ov::Output<ov::Node> ov_input = model_->input(name_str);
+                ov::Layout input_layout = ov::layout::get_layout(ov_input);
+                std::string tmp_layout = input_layout.to_string();
+                size_t name_size1 = strlen(name);
+                size_t name_size = sizeof(name);
                 ret = OpenvinoBlobConverter::CreateOrUpdateBlob(&input_blob_arr_[input_blob_size_++], ov_tensor, name, false);
                 if (ret != RS_SUCCESS)
                 {
@@ -209,28 +224,31 @@ namespace rayshape
             size_t output_count = outputs.size();
             if (output_count <= 0)
             {
-                // 日志
+                // log todo
+                ClearBlobArray();
                 return RS_INVALID_MODEL;
             }
 
             output_blob_arr_ = (Blob **)malloc(sizeof(Blob *) * output_count);
             if (output_blob_arr_ == nullptr)
             {
-                // MAGIC_XE_LOGE("Output blobs malloc MagicXEBlob:%d * size:%zu failed", sizeof(MagicXEBlob), output_count);
+                // RS_LOGE("Output blobs malloc Blob:%d * size:%zu failed", sizeof(Blob), output_count);
                 ClearBlobArray();
-                return RS_OUTOF_MEMORY;
+                return RS_OUTOFMEMORY;
             }
             memset(output_blob_arr_, 0, sizeof(Blob *) * output_count);
             for (const auto output : outputs)
             {
-                const char *name = output.get_any_name().c_str();
+                std::string output_name = output.get_any_name();
+                const char *name = output_name.c_str();
                 if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME)
                 {
-                    // MAGIC_XE_LOGE("GetOutputName:%s len:%d failed", name != NULL ? name : "", name != NULL ? strlen(name) : 0);
+                    // RS_LOGE("GetOutputName:%s len:%d failed", name != NULL ? name : "", name != NULL ? strlen(name) : 0);
+                    ClearBlobArray();
                     return RS_INVALID_MODEL;
                 }
-                ov::Tensor ov_tensor = infer_request_.get_tensor(name);
-                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(&output_blob_arr_[output_blob_size_++], ov_tensor, name, true); // 需不需要分配内存根据实际情况考虑
+                ov::Tensor ov_tensor = infer_request_.get_tensor(output_name);
+                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(&output_blob_arr_[output_blob_size_++], ov_tensor, name, false); // 需不需要分配内存根据实际情况考虑
                 if (ret != RS_SUCCESS)
                 {
                     // LOGE ("CreateOrUpdateBlob failed");
@@ -276,24 +294,37 @@ namespace rayshape
         ErrorCode OpenVinoNetWork::Forward()
         {
             ErrorCode ret = RS_SUCCESS;
-            for (size_t i = 0; i < input_blob_size_; ++i)
+            try
             {
-                Blob *blob = input_blob_arr_[i];
-                const char *name = blob->name;
-                std::shared_ptr<ov::Tensor> ov_tensor = OpenvinoBlobConverter::ConvertFromBlob(ret, blob);
-                if (ov_tensor == nullptr || ret != RS_SUCCESS)
+                for (size_t i = 0; i < input_blob_size_; ++i)
                 {
-                    // 日志
-                    return ret;
+                    Blob *blob = input_blob_arr_[i];
+                    Buffer *blob_buffer = blob->buffer;
+                    bool need_set_input = blob_buffer->GetAllocFlag();
+                    if (!need_set_input)
+                    {
+                        const char *name = blob->name;
+                        std::shared_ptr<ov::Tensor> ov_tensor = OpenvinoBlobConverter::ConvertFromBlob(ret, blob);
+                        if (ov_tensor == nullptr || ret != RS_SUCCESS)
+                        {
+                            // log todo
+                            return ret;
+                        }
+                        infer_request_.set_tensor(name, *(ov_tensor.get()));
+                    }
                 }
-                infer_request_.set_tensor(name, *(ov_tensor.get()));
-            }
-            // 同步推理
-            //  infer_request_.infer();
+                // 同步推理
+                infer_request_.infer();
 
-            // forward
-            infer_request_.start_async();
-            infer_request_.wait();
+                // forward
+                // infer_request_.start_async();
+                // infer_request_.wait();
+            }
+            catch (const ov::Exception &e)
+            {
+                printf("openvino model infer failed: %s\n", e.what());
+                return RS_MODEL_ERROR;
+            }
 
             return ret;
         }
@@ -302,13 +333,13 @@ namespace rayshape
         {
             if (blob_arr == nullptr || blob_size == nullptr)
             {
-                // 日志
+                // log todo
                 return RS_INVALID_PARAM;
             }
 
             if (input_blob_arr_ == nullptr || input_blob_size_ <= 0)
             {
-                // 日志
+                // log todo
                 return RS_INVALID_MODEL;
             }
 
@@ -322,7 +353,7 @@ namespace rayshape
         {
             if (blob_arr == nullptr || blob_size == nullptr)
             {
-                // 日志
+                // log todo
                 return RS_INVALID_PARAM;
             }
 
@@ -341,7 +372,7 @@ namespace rayshape
         {
             if (input_blob_arr_ == nullptr || blob == nullptr || input_blob_size_ <= 0)
             {
-                // 日志
+                // log todo
                 return RS_INVALID_MODEL;
             }
 
@@ -349,7 +380,7 @@ namespace rayshape
             *blob = FindBlobAndIndexByName(input_blob_arr_, input_blob_size_, input_name, &index);
             if (*blob == NULL)
             {
-                // MAGIC_XE_LOGE("Not Find Blob name:%s", input_name != nullptr ? input_name : "");
+                // RS_LOGE("Not Find Blob name:%s", input_name != nullptr ? input_name : "");
                 return RS_INVALID_PARAM;
             }
 
@@ -360,12 +391,12 @@ namespace rayshape
         {
             if (output_blob_arr_ == nullptr)
             {
-                // MAGIC_XE_LOGE("output_blob_arr_ is nullptr");
+                // RS_LOGE("output_blob_arr_ is nullptr");
                 return RS_INVALID_MODEL;
             }
             if (output_blob_size_ <= 0)
             {
-                // MAGIC_XE_LOGE("output_blob_size_:%d is empty", output_blob_size_);
+                // RS_LOGE("output_blob_size_:%d is empty", output_blob_size_);
                 return RS_INVALID_MODEL;
             }
 

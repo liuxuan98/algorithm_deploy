@@ -7,16 +7,16 @@ set(CPACK_PACKAGE_DIRECTORY ${ROOT_PATH}/build/package)                      # C
 set(CPACK_PACKAGE_VERSION_MAJOR "${RS_MAJOR_VERSION}")
 set(CPACK_PACKAGE_VERSION_MINOR "${RS_MINOR_VERSION}")
 set(CPACK_PACKAGE_VERSION_PATCH "${RS_PATCH_VERSION}")
-set(CPACK_PACKAGE_VERSION ${RS_MAJOR_VERSION}.${VERSION_MINOR}.${VERSION_PATCH}.${RS_BUILD_VERSION}) #与最外围的保持一致
+set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}.${RS_BUILD_VERSION}) #与最外围的保持一致
 ## 选择忽略文件或文件夹
-set(CPACK_SOURCE_IGNORE_FILES
-        ${ROOT_PATH}/build
-        ${ROOT_PATH}/cmake-build-debug
-        ${ROOT_PATH}/pack        
-        ${ROOT_PATH}/.git
-        ${ROOT_PATH}/.gitignore
-        ${ROOT_PATH}/.vscode        
-)
+# set(CPACK_SOURCE_IGNORE_FILES
+#         ${ROOT_PATH}/build
+#         ${ROOT_PATH}/cmake-build-debug
+#         ${ROOT_PATH}/pack        
+#         ${ROOT_PATH}/.git
+#         ${ROOT_PATH}/.gitignore
+#         ${ROOT_PATH}/.vscode        
+# )
 
 set(CPACK_PACKAGE_NAME "${MY_PROJECT_NAME}")   # 顶层的项目命名 CMAKE_PROJECT_NAME
 set(CPACK_GENERATOR  "TGZ")          # 指定打包的类型是 tar.gz   (RS_Deployment_0.3.0.0.tar.gz) 

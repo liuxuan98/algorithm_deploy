@@ -1,6 +1,9 @@
 #include "inference/openvino/openvino_blob_converter.h"
 #include "inference/openvino/openvino_config_converter.h"
+#include "utils/memory_size_info.h"
+#include "utils/blob_utils.h"
 
+using namespace rayshape::utils;
 
 namespace rayshape
 {
@@ -11,7 +14,7 @@ namespace rayshape
         {
             if (src == nullptr)
             {
-                status = RS_INVALID_PARAM_VALUE;
+                status = RS_NULL_PARAM;
                 return nullptr;
             }
 
@@ -21,7 +24,7 @@ namespace rayshape
             status = OpenVINOConfigConverter::ConvertFromDataType(openvino_precision, src->data_type);
             if (status != RS_SUCCESS)
             {
-                // 打印日志
+                // log
                 return nullptr;
             }
 
@@ -29,14 +32,14 @@ namespace rayshape
             status = OpenVINOConfigConverter::ConvertFromDataFormat(openvino_layout, src->data_format);
             if (status != RS_SUCCESS)
             {
-                // 打印日志
+                // log
                 return nullptr;
             }
             ov::Shape openvino_dims;
             status = OpenVINOConfigConverter::ConvertFromDims(openvino_dims, src->dims);
             if (status != RS_SUCCESS)
             {
-                // 打印日志
+                // log
                 return nullptr;
             }
 
@@ -47,70 +50,97 @@ namespace rayshape
             {
                 dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (float *)data));
             }
-            else if (ov::element::u16 == openvino_precision)
+            else if (ov::element::f16 == openvino_precision)
             {
-                // todo
+                dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (char16_t *)data));
+            }
+            else if (ov::element::u8 == openvino_precision)
+            {
+                dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (uint8_t *)data));
+            }
+            else if (ov::element::i32 == openvino_precision)
+            {
+                dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (int32_t *)data));
+            }
+            else if (ov::element::i64 == openvino_precision)
+            {
+                dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (int64_t *)data));
+            }
+            else if (ov::element::u32 == openvino_precision)
+            {
+                dst_tensor.reset(new ov::Tensor(openvino_precision, openvino_dims, (uint32_t *)data));
             }
             else
             {
                 status = RS_INVALID_MODEL;
-                // 打印日志
+                // log
                 dst_tensor = nullptr;
-                // return nullptr;
             }
 
             return dst_tensor;
         }
 
-        ErrorCode OpenvinoBlobConverter::CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src, const char *blob_name, bool alloc)
+        ErrorCode OpenvinoBlobConverter::CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src, const char *blob_name, bool alloc, bool gpu_blob)
         {
+            if (dst == nullptr)
+            {
+                return RS_INVALID_PARAM;
+            }
             ErrorCode ret = RS_SUCCESS;
-            //if ((*dst)->name != blob_name) //对比
-            //{
-            //    //
-            //    return RS_INVALID_PARAM;
-            //}
-            // convert data type
-            DataType data_type = OpenVINOConfigConverter::ConvertToDataType(src.get_element_type());
-            (*dst)->data_type = data_type;
 
-            // convert input format(layout)
-           /* ov::Output<const ov::Node> ov_input = model_->input(std::string(blob_name));
-            ov::Layout input_layout = ov::layout::get_layout(ov_input);*/
-            std::string layout = "NCHW"; //为了编译暂时固定排布
-            //input_layout.to_string();
-            DataFormat data_format = OpenVINOConfigConverter::ConvertToDataFormat(layout);
+            if (*dst != nullptr)
+            {
+                free(*dst); // 防止内存泄漏
+                *dst = nullptr;
+            }
+
+            Blob *blob = (Blob *)malloc(sizeof(Blob));
+            if (blob == nullptr)
+            {
+                return RS_OUTOFMEMORY;
+            }
+            memset(blob, 0, sizeof(Blob));
+            //   convert data type
+            blob->data_type = OpenVINOConfigConverter::ConvertToDataType(src.get_element_type());
 
             // convert shape dims
-            ret = OpenVINOConfigConverter::ConvertToDims((*dst)->dims, src.get_shape());
+            ret = OpenVINOConfigConverter::ConvertToDims(blob->dims, src.get_shape());
             if (ret != RS_SUCCESS)
             {
                 return ret;
             }
 
-            void *data = src.data(); // 获得浅拷贝指针
+            // convert data layout
+            std::string layout = GetDataLayoutString(blob->dims);
+            blob->data_format = OpenVINOConfigConverter::ConvertToDataFormat(layout);
 
-            // convert
-
-            // Buffer *buffer = (*dst)->buffer;
-            // if (buffer == nullptr)
-            // {
-            //     AbstractDevice *device = getDefaultHostDevice(); // 返回并创建cpudevice
-            //     (*dst)->buffer = new Buffer()
-            // }
-
-            if (alloc)
+            // device type
+            if (gpu_blob)
             {
-                //size_t size = 0;                  // GetByteSize(*blob);
-                //AbstractDevice *device = nullptr; // getDefaultHostDevice();
-                //(*dst)->buffer = new Buffer(device, size, data, true);
-                // 深拷贝需要blob中的buffer额外创建一块内存
+                blob->device_type = DEVICE_TYPE_INTERL_GPU;
             }
             else
             {
+                blob->device_type = DEVICE_TYPE_CPU;
+            }
+            // blob name
+            strncpy(blob->name, blob_name, strlen(blob_name));
+
+            if (alloc)
+            {
+                size_t byte_size = CalculateMemorySize(blob->dims, blob->data_type);
+
+                blob->buffer = new Buffer(byte_size, blob->device_type, false);
+            }
+            else
+            {
+                void *data = src.data(); // 获得浅拷贝指针
+                size_t size = src.get_byte_size();
+                blob->buffer = new Buffer(size, blob->device_type, true, data);
                 //
             }
 
+            *dst = blob;
             return RS_SUCCESS;
         }
 

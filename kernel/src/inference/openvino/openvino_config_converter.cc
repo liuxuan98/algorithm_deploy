@@ -15,12 +15,21 @@ namespace rayshape
             {
                 return DataType::DATA_TYPE_HALF;
             }
-            else if (ov::element::u16 == precision)
+            else if (ov::element::i32 == precision)
             {
+                return DATA_TYPE_INT32;
+            }
+            else if (ov::element::i64 == precision)
+            {
+                return DATA_TYPE_INT64;
+            }
+            else if (ov::element::u32 == precision)
+            {
+                return DATA_TYPE_UINT32;
             }
             else if (ov::element::u8 == precision)
             {
-                // todo ....
+                return DATA_TYPE_INT8;
             }
             else
             {
@@ -30,8 +39,37 @@ namespace rayshape
             return DATA_TYPE_AUTO;
         }
 
-        ErrorCode OpenVINOConfigConverter::ConvertFromDataType(const ov::element::Type &precision, const DataType dataType)
+        ErrorCode OpenVINOConfigConverter::ConvertFromDataType(ov::element::Type &precision, const DataType dataType)
         {
+            if (dataType == DATA_TYPE_FLOAT)
+            {
+                precision = ov::element::f32;
+            }
+            else if (dataType == DATA_TYPE_HALF)
+            {
+                precision = ov::element::f16;
+            }
+            else if (dataType == DATA_TYPE_INT32)
+            {
+                precision = ov::element::i32;
+            }
+            else if (dataType == DATA_TYPE_INT64)
+            {
+                precision = ov::element::i64;
+            }
+            else if (dataType == DATA_TYPE_UINT32)
+            {
+                precision = ov::element::u32;
+            }
+            else if (dataType == DATA_TYPE_INT8)
+            {
+                precision = ov::element::u8;
+            }
+            else
+            {
+                // log
+                return RS_INVALID_PARAM_FORMAT;
+            }
 
             return RS_SUCCESS;
         }
@@ -49,14 +87,13 @@ namespace rayshape
 
         ErrorCode OpenVINOConfigConverter::ConvertToDims(Dims &dst, const ov::Shape &src)
         {
-            if (dst.size != src.size())
-            {
-                return RS_INVALID_PARAM;
-            }
+
+            dst.size = src.size();
             for (int i = 0; i < src.size(); i++)
             {
                 dst.value[i] = src[i];
             }
+            return RS_SUCCESS;
         }
 
         ErrorCode OpenVINOConfigConverter::ConvertToDevice(DeviceType &dst, const std::string &src)
