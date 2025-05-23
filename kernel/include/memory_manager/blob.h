@@ -1,0 +1,63 @@
+#ifndef _BLOB_H_
+#define _BLOB_H_
+
+#include "base/common.h"
+#include "base/macros.h"
+#include "base/error.h"
+#include "memory_manager/buffer.h"
+
+namespace rayshape
+{
+
+#define MAX_DIMS_SIZE 6
+#define MAX_BLOB_NAME 64
+
+    typedef struct Dims
+    {
+        int size;
+        int value[MAX_DIMS_SIZE];
+    } Dims;
+
+    typedef struct RS_PUBLIC Blob
+    {
+        // device type cpu, gpu,.........
+        DeviceType device_type;
+        // data_type describes data precision fp32,int8,..........
+        DataType data_type; // 数据类型
+        // data format describes data layout NCHW,NHWC,CHW,HWC,HW,.........
+        DataFormat data_format; // 数据格式
+        // DimsVector dims describes data dims.
+        Dims dims; // 数据维度
+
+        char name[MAX_BLOB_NAME + 1]; // blob名称
+
+        // buffer
+        // or void *buffer = nullptr;
+        Buffer *buffer = nullptr; // 内存空间 ,考虑要不用share_ptr来管理
+    } Blob;
+
+    using BlobMap = std::map<std::string, Blob *>; // blob name, blob
+
+    using ShapeMap = std::map<std::string, Dims *>; // shape
+
+    // RS_PUBLIC
+    /*
+     * @brief 以下接口开放出来给全局使用，分配blob
+     *
+     */
+    Blob *BlobAlloc(DeviceType device_type, DataType data_type, DataFormat data_format,
+                    const char *name, const Dims *dims); // 分配一个blob
+
+    // RS_PUBLIC
+    Blob *BlobMake(DeviceType device_type, DataType data_type, DataFormat data_format, const char *name, const Dims *dims);
+
+    void *BlobBufferGet(Blob *blob);
+
+    size_t BlobSizeGet(Blob *blob);
+
+    ErrorCode BlobCopy(Blob *dst_blob, Blob *src_blob);
+
+    ErrorCode BlobFree(Blob *blob);
+} // namespace rayshape
+
+#endif

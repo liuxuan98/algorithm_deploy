@@ -1,0 +1,37 @@
+// 内存计算function 工具
+
+#ifndef _MEMORY_SIZE_INFO_H_
+#define _MEMORY_SIZE_INFO_H_
+
+#include "type_utils.h"
+#include "memory_manager/blob.h"
+
+namespace rayshape
+{
+    namespace utils
+    {
+        size_t CalculateDims(const Dims &dims)
+        {
+            size_t result = 1;
+            for (int i = 0; i < dims.size; i++)
+            {
+                result *= dims.value[i];
+            }
+            return result;
+        }
+
+        size_t CalculateMemorySize(const Dims &dims, const DataType &data_type)
+        {
+            size_t dims_size = CalculateDims(dims);
+
+            int type_size = GetBytesSize(data_type); // 为0的情况
+
+            size_t byte_size = dims_size * type_size;
+
+            return byte_size;
+        }
+
+    }
+}
+
+#endif

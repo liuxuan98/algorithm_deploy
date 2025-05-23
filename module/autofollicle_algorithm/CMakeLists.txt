@@ -1,0 +1,3 @@
+
+#将项目的目标放入分组中
+set_property(TARGET ${name} PROPERTY FOLDER ${})

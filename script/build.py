@@ -1,0 +1,11 @@
+#todo  根据参数调用不同平台的构建脚本
+
+
+#调用格式 python Build.py Windows/Linux/Mac Release Publish/Test 不支持debug模式的编译
+
+import os
+import sys
+
+
+
+

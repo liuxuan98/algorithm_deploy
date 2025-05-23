@@ -1,0 +1,99 @@
+// #ifndef _BUFFER_V1_H_
+// #define _BUFFER_V1_H_
+
+// #include "base/common.h"
+// #include "device/device.h"
+// // buffer 来管理device分配的内存，真正的设备内存持有者
+
+// // 分配buffer的大小
+// // buffer考虑不要传递divice进来而是
+// using namespace rayshape::common;
+
+// namespace rayshape
+// {
+//     namespace memory_manager
+//     {
+
+//         struct RS_PUBIC BufferDesc // 用于描述需要分配多少内存的
+//         {
+//         public:
+//             // default
+//             BufferDesc();
+//             ~BufferDesc();
+
+//             explicit BufferDesc(DataType data_type, size_t size);
+
+//             explicit BufferDesc(DataType data_type, const SizeVector &size);
+
+//             size_t GetByteSize() const;
+
+//         private:
+//             /**
+//              * @brief
+//              * 1d size
+//              * 2d h w c sizeof(T) - 例如OpenCL cl::Image2d
+//              * 3d unknown
+//              */
+//             SizeVector size_;
+//             /**
+//              * @brief
+//              * fp32,fp16,uint8.uint32...
+//              *
+//              *
+//              */
+//             DataType data_type_;
+//             /**
+//              * @brief
+//              * 根据不同的设备以及内存形态有不同的config_
+//              */
+//             // IntVector config_;
+
+//         }; // 需要一个额外的工具来比如 memory_size_info 来计算buffer大小
+
+//         class RS_PUBIC BufferV1
+//         {
+//         public:
+//             BufferV1(Device *device, size_t size); // get device 注册表中拿到指针 然后分配buffer
+//             BufferV1(Device *device, const BufferDesc &desc);
+
+//             BufferV1(Device *device, size_t size, void *ptr);
+//             BufferV1(Device *device, const BufferDesc &desc, void *ptr);
+
+//             BufferV1(Device *device, size_t size, void *ptr, bool is_external);
+//             BufferV1(Device *device, const BufferDesc &desc, void *ptr,
+//                      bool is_external); // 这里可能弄一个枚举变量会更好
+
+//             BufferV1(const BufferV1 &buffer);
+//             // BufferV1 &operator=(const BufferV1 &buffer) = delete;
+
+//             BufferV1(BufferV1 &&buffer) noexcept;
+//             BufferV1 &operator=(BufferV1 &&buffer) noexcept;
+
+//             virtual ~BufferV1();
+
+//             // clone and copy
+//             BufferV1 *clone();
+//             ErrorCode copyTo(BufferV1 *dst);
+
+//             // ErrorCode DeepCopy(BufferV1 &dst);
+
+//         private:
+//             void clear();
+
+//         private:
+//             Device *device_ = nullptr; // 内存对应的具体设备
+
+//             void *data_ptr_ = nullptr; // 真正的地址持有者
+
+//             size_t size_ = 0; // 可以考虑放到BufferDesc 中持有一个size
+
+//             BufferDesc desc_;
+
+//             bool external_ = false; // 是否是外部内存,内部分配、内存映射,三种方式,考虑做枚举变量
+
+//             // int ref_count_ = nullptr; // 引用计数
+//         };
+//     } // memory_manager
+// } // rayshape
+
+// #endif

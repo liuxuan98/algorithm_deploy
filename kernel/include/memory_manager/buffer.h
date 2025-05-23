@@ -1,0 +1,40 @@
+#ifndef _BUFFER_H_
+#define _BUFFER_H_
+
+#include <memory>
+#include <string>
+
+#include "base/common.h"
+#include "base/error.h"
+
+namespace rayshape
+{
+    class RS_PUBLIC Buffer
+    {
+    public:
+        Buffer();
+
+        ~Buffer();
+        // 出现歧义重载错误
+        explicit Buffer(size_t byte_size, DeviceType mem_type, bool external_alloc); // 根据内存类型和具体的byte数来分配内存
+        // memory type and device type 相互转换
+        explicit Buffer(size_t byte_size, DeviceType mem_type, bool external_alloc, void *data);
+        // bool 类型可以隐式转换
+        void *GetSrcData();
+
+        bool GetAllocFlag() const;
+
+    private:
+        std::shared_ptr<void> data_alloc_ = nullptr;
+
+        void *data_ = nullptr;
+        size_t size_ = 0;
+
+        DeviceType mem_type_ = DEVICE_TYPE_NONE;
+
+        bool external_ = false;
+    };
+
+} // rayshape
+
+#endif

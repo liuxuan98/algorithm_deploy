@@ -1,0 +1,21 @@
+#include "rayshape_error.h"
+#include "rayshape_macros.h"
+
+using namespace rayshape;
+class Follicle
+{
+public:
+	Follicle();
+	~Follicle();
+
+	ErrorCode Init(const char *model_json);
+
+	ErrorCode Process(unsigned char *src_image_ptr, FollicleOutParams *out_params);
+
+	void DeInit();
+
+private:
+	std::ptr<Inference> m_inference_ = nullptr;
+	Blob *m_input_blob_ = nullptr; // 有几个输入就创建几个blobs
+	Blob *m_output_blob_ = nullptr;
+}
