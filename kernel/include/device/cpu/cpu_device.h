@@ -7,7 +7,6 @@ namespace rayshape
 {
     namespace device
     {
-
         /**
          * @brief cpu device,finish cpu memory operation.
          *

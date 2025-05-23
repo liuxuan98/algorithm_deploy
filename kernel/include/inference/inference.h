@@ -6,9 +6,6 @@
 #include "memory_manager/blob.h"
 #include "utils/model.h"
 
-using namespace rayshape::common; // 使用命名空间
-using namespace rayshape;
-
 namespace rayshape
 {
     namespace inference

@@ -13,28 +13,27 @@ namespace rayshape
         // param errcode
         RS_INVALID_PARAM = 0x1000,
         RS_INVALID_PARAM_VALUE = 0x1001,
-        RS_INVALID_PARAM_TYPE = 0x1002,
-        RS_INVALID_PARAM_NAME = 0x1003,
+        RS_INVALID_PARAM_NAME = 0x1002,
+        RS_INVALID_PARAM_FORMAT = 0x1003,
         RS_NULL_PARAM = 0x1004,
-        RS_INVALID_PARAM_FORMAT = 0x1005,
+
         // model errcode
         RS_INVALID_MODEL = 0x2000,
-        RS_MODEL_ERROR = 0x2001,
+        RS_MODEL_COMPILE_ERROR = 0x2001,
+        RS_MODEL_ERROR = 0x2002,
 
         // common errcode
         RS_INVALID_LICENSE = 0x3000,
-        RS_OUTOF_MEMORY = 0x3001,
-        RS_INVALID_FILE = 0x3002,
-        RS_INVALID_FILE_PATH = 0x3003,
+        RS_INVALID_FILE = 0x3001,
+        RS_OUTOFMEMORY = 0x3002,
 
         // device errcode
-        RS_DEVICE_NOT_SUPPORT = 0x9000,
-        RS_DEVICE_INVALID_DEVICE = 0x9001,
-        RS_DEVICE_INVALID_DEVICE_TYPE = 0x9002,
+        RS_DEVICE_NOT_SUPPORT = 0x4000,
+        RS_DEVICE_INVALID = 0x4001,
 
         // cuda errcode
-        RS_CUDA_TENSORRT_ERROR = 0x4000,
-        RS_CUDA_MEMCPY_ERROR = 0x4001,
+        RS_CUDA_TENSORRT_ERROR = 0x5000,
+        RS_CUDA_MEMCPY_ERROR = 0x5001
     };
 
 }

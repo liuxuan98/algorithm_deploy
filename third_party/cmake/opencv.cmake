@@ -15,7 +15,7 @@ macro(set_opencv_lib ARG0)
     include_directories(${opencv_include_dir})
 
     #根据平台拼接库 opencv_lib_path 会有不同变化
-    set(opencv_lib_path ${ROOT_PATH}/third_party/opencv/${CMAKE_SYSTEM_NAME}/lib/${CMAKE_BUILD_TYPE})
+    set(opencv_lib_path ${ROOT_PATH}/third_party/opencv/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}/lib/${CMAKE_BUILD_TYPE})
     
     foreach(lib ${libs})
         set(lib_name ${LIB_PREFIX}${lib}${LIB_SUFFIX})

@@ -2,8 +2,8 @@
   define 一些常用的宏
 */
 
-#ifndef RS_MACROS_H
-#define RS_MACROS_H
+#ifndef _MACROS_H_
+#define _MACROS_H_
 
 #include <assert.h>
 #include <stdarg.h>
@@ -20,14 +20,14 @@
  *
  */
 #if defined(_MSC_VER)
-#if defined(BUILDING_RS_DLL) // Cmake宏
+#if defined(BUILDING_RS_DLL)
 #define RS_PUBLIC __declspec(dllexport)
 #elif defined(USING_RS_DLL)
 #define RS_PUBLIC __declspec(dllimport)
 #else
 #define RS_PUBLIC
 #endif // BUILDING_RS_DLL
-#else
+#else  // _MSC_VER/WINDOWS
 #define RS_PUBLIC __attribute__((visibility("default")))
 #endif // _MSC_VER
 
@@ -52,4 +52,4 @@
 #define RS_MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
-#endif
+#endif //_MACROS_H_

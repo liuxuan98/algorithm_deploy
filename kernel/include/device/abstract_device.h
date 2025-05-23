@@ -1,13 +1,10 @@
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+#ifndef _ABSTRACT_DEVICE_H_
+#define _ABSTRACT_DEVICE_H_
 
 #include "base/common.h"
 #include "base/error.h"
 #include "base/macros.h"
 #include "memory_manager/buffer.h"
-
-using namespace rayshape;
-using namespace rayshape::common;
 
 namespace rayshape
 {

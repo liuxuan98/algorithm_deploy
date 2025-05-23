@@ -11,7 +11,7 @@ macro(set_openvino_lib)
     include_directories(${openvino_include_dir})
 
     #根据平台拼接库 openvino_lib_path 会有不同变化
-    set(openvino_lib_path ${ROOT_PATH}/third_party/openvino/${CMAKE_SYSTEM_NAME}/x86/lib/${CMAKE_BUILD_TYPE})
+    set(openvino_lib_path ${ROOT_PATH}/third_party/openvino/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}/lib/${CMAKE_BUILD_TYPE})
     
     foreach(lib ${libs})
         set(lib_name ${LIB_PREFIX}${lib}${LIB_SUFFIX})

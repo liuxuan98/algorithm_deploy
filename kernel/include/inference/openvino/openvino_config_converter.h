@@ -11,7 +11,7 @@ namespace rayshape
 
         class OpenVINOConfigConverter
         {
-        public: // Fp16 ,unint8 ,fp32
+        public: // Fp16 ,uint8 ,fp32
             static DataType ConvertToDataType(const ov::element::Type &precision);
 
             static ErrorCode ConvertFromDataType(ov::element::Type &precision, const DataType dataType);
@@ -20,7 +20,7 @@ namespace rayshape
 
             static ErrorCode ConvertToDims(Dims &dst, const ov::Shape &src);
 
-            static ErrorCode ConvertToDevice(DeviceType &dst, const std::string &src); // 设备类型 CPU NPU iGPU
+            static ErrorCode ConvertToDevice(DeviceType &dst, const std::string &src);
             static ErrorCode ConvertFromDevice(std::string &dst, const DeviceType &src);
             //
             static DataFormat ConvertToDataFormat(const std::string &src);

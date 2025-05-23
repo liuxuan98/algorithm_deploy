@@ -1,11 +1,9 @@
-#ifndef _OPENVINO_BLOB_CONVERTER_H
-#define _OPENVINO_BLOB_CONVERTER_H
+#ifndef _OPENVINO_BLOB_CONVERTER_H_
+#define _OPENVINO_BLOB_CONVERTER_H_
 
 #include "memory_manager/blob.h"
 #include "base/error.h"
 #include "openvino_include.h"
-
-#include <memory>
 
 namespace rayshape
 {
@@ -23,7 +21,7 @@ namespace rayshape
              *     @param[out] dst  Blob**
              *     @return ErrorCode
              */
-            static ErrorCode CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src, const char *blob_name,bool alloc, bool gpu_blob = false);
+            static ErrorCode CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src, const char *blob_name, bool alloc, bool gpu_blob = false);
 
             /**
              *    @brief 自有Blob 转换为 InferenceEngine::Blob::Ptr
