@@ -1,40 +1,91 @@
+
 #ifndef _BUFFER_H_
 #define _BUFFER_H_
-
-#include <memory>
-#include <string>
 
 #include "base/common.h"
 #include "base/error.h"
 
+
 namespace rayshape
 {
-    class RS_PUBLIC Buffer
-    {
+
+    typedef struct RSMemoryInfo {
+        MemoryType men_type = MEM_TYPE_NONE;
+        DataType data_type = DATA_TYPE_NONE;
+        unsigned int size = 0;
+    } RSMemoryInfo;
+
+    typedef struct RSMemoryData {
+        unsigned int data_id;
+        void *data_ptr = nullptr;
+        void *context = nullptr;
+    } RSMemoryData;
+
+    typedef struct RSMemory {
+        RSMemoryInfo mem_info;
+        RSMemoryData mem_data;
+    } RSMemory;
+
+    class RS_PUBLIC Buffer {
     public:
         Buffer();
 
-        ~Buffer();
-        // 出现歧义重载错误
-        explicit Buffer(size_t byte_size, DeviceType mem_type, bool external_alloc); // 根据内存类型和具体的byte数来分配内存
-        // memory type and device type 相互转换
-        explicit Buffer(size_t byte_size, DeviceType mem_type, bool external_alloc, void *data);
-        // bool 类型可以隐式转换
-        void *GetSrcData();
+        Buffer(size_t size, MemoryType mem_type); // default uint8 datatype
 
-        bool GetAllocFlag() const;
+        Buffer(const RSMemoryInfo &mem_info);
+
+        Buffer(void *data, size_t size, MemoryType mem_type);
+
+        Buffer(void *data, const RSMemoryInfo &mem_info);
+
+        Buffer(unsigned int id, const RSMemoryInfo &mem_info);
+
+        virtual ~Buffer();
+
+        static Buffer *Alloc(size_t size, MemoryType mem_type);
+
+        static Buffer *Alloc(const RSMemoryInfo &mem_info);
+
+        static Buffer *Create(void *data, size_t size, MemoryType mem_type);
+
+        static Buffer *Create(void *data, const RSMemoryInfo &mem_info);
+
+        static Buffer *Create(unsigned int id, const RSMemoryInfo &mem_info);
+
+        MemoryType GetMemoryType() const;
+
+        RSMemoryInfo GetMemoryInfo() const;
+
+        void *GetDataPtr() const;
+
+        unsigned int GetDataId() const;
+
+        size_t GetDataSize() const;
+
+        ErrorCode DeepCopy(Buffer &dst);
+
+        bool GetExternalFlag() const;
 
     private:
-        std::shared_ptr<void> data_alloc_ = nullptr;
+        ErrorCode Malloc(const RSMemoryInfo &mem_info, RSMemoryData &mem_data);
 
-        void *data_ = nullptr;
-        size_t size_ = 0;
+        // void Init(const RSMemoryInfo &mem_info, const RSMemoryData &mem_data, bool external);
 
-        DeviceType mem_type_ = DEVICE_TYPE_NONE;
+        void Init(const RSMemoryInfo &mem_info, void *data, unsigned int data_id, bool external);
 
-        bool external_ = false;
+        Buffer &operator=(const Buffer &buffer) = delete;
+
+    private:
+        // 设备对象
+        // AbstractDevice *device_ = nullptr;
+        // 内存结构体
+        RSMemory mem_{ { MEM_TYPE_NONE, DATA_TYPE_NONE, 0 }, { 0, nullptr, nullptr } };
+        // 内外部内存flag
+        bool is_external_ = false;
     };
 
-} // rayshape
+    RS_PUBLIC void *RSBufferDataGet(Buffer *buffer);
+
+} // namespace rayshape
 
 #endif

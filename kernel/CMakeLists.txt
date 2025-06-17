@@ -11,6 +11,8 @@ set(KERNEL_WORK_FLODER kernel)
 # include
 include_directories(${KERNEL_SOURCE_ROOT_PATH}/include) #缩短源码包含路径长度
 
+include(${KERNEL_SOURCE_ROOT_PATH}/../third_party/cmake/rapidjson.cmake)
+
 #set()
 #根据最外层的cmake编译选项来添加编译源文件
 # # attention GLOB or GLOB_RECURSE
@@ -30,7 +32,9 @@ if(ENABLE_BASE)
     #memory_management
     file(GLOB MEMORY_MANAGEMENT_SOURCE 
         "${KERNEL_SOURCE_ROOT_PATH}/include/memory_manager/*.h"
-        "${KERNEL_SOURCE_ROOT_PATH}/src/memory_manager/*.cc")
+        "${KERNEL_SOURCE_ROOT_PATH}/src/memory_manager/*.cc"
+        "${KERNEL_SOURCE_ROOT_PATH}/include/memory_manager/kernel_buffer.h"
+        "${KERNEL_SOURCE_ROOT_PATH}/src/memory_manager/kernel_buffer.cc")
     set(KERNEL_SOURCE ${KERNEL_SOURCE} ${MEMORY_MANAGEMENT_SOURCE})
 endif()
 
@@ -76,6 +80,8 @@ if(ENABLE_OPENVINO_INFERENCE)
     list(APPEND KERNEL_LINK_LIBRARY ${openvino_lib})
 endif()
 
+include(${ROOT_PATH}/third_party/cmake/rapidjson.cmake)
+
 message(STATUS "lib name is:" ${LIB_NAME})
 
 target_link_libraries(${LIB_NAME} ${KERNEL_LINK_LIBRARY})
@@ -84,15 +90,8 @@ target_link_libraries(${LIB_NAME} ${KERNEL_LINK_LIBRARY})
 set_property(TARGET ${LIB_NAME} PROPERTY FOLDER ${KERNEL_WORK_FLODER})
 
 ## install
-install(TARGETS ${LIB_NAME}
-    RUNTIME DESTINATION bin/${CMAKE_BUILD_TYPE} #二进制文件路径
-    LIBRARY DESTINATION lib/${CMAKE_BUILD_TYPE} #动态库的路径
-    ARCHIVE DESTINATION lib/${CMAKE_BUILD_TYPE} #静态库
-    #BUNDLE DESTINATION lib/${CMAKE_BUILD_TYPE} macOS 上的应用程序包
-    PUBLIC_HEADER DESTINATION include) 
-
-#include(${ROOT_PATH}/cmake/common/install_macro.cmake)
-#install_target(${LIB_NAME})
+include(${ROOT_PATH}/cmake/common/install_macro.cmake)
+install_target(${LIB_NAME})
 
 #unset(LIB_NAME) #防止目标丢失
 unset(KERNEL_SOURCE)

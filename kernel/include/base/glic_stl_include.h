@@ -64,6 +64,4 @@
 #include <mutex>
 #include <thread>
 
-
 #endif //_GLIBC_STL_INCLUDE_H_
-

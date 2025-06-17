@@ -4,8 +4,7 @@
 
 namespace rayshape
 {
-    class AbstractParam
-    {
+    class AbstractParam {
     public:
         AbstractParam();
 

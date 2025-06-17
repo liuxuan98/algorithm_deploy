@@ -1,3 +1,4 @@
+
 #ifndef _BLOB_H_
 #define _BLOB_H_
 
@@ -12,52 +13,76 @@ namespace rayshape
 #define MAX_DIMS_SIZE 6
 #define MAX_BLOB_NAME 64
 
-    typedef struct Dims
-    {
+    typedef struct Dims {
         int size;
         int value[MAX_DIMS_SIZE];
     } Dims;
 
-    typedef struct RS_PUBLIC Blob
-    {
-        // device type cpu, gpu,.........
-        DeviceType device_type;
-        // data_type describes data precision fp32,int8,..........
-        DataType data_type; // 数据类型
-        // data format describes data layout NCHW,NHWC,CHW,HWC,HW,.........
-        DataFormat data_format; // 数据格式
-        // DimsVector dims describes data dims.
-        Dims dims; // 数据维度
+    typedef struct RS_PUBLIC Blob {
+        DeviceType device_type; // device_type describes device type cpu, gpu,.........
 
-        char name[MAX_BLOB_NAME + 1]; // blob名称
+        DataType data_type; // data_type describes data precision fp32,int8,..........
 
-        // buffer
-        // or void *buffer = nullptr;
-        Buffer *buffer = nullptr; // 内存空间 ,考虑要不用share_ptr来管理
+        DataFormat data_format; // data format describes data layout NCHW,NHWC,CHW,HWC,HW,.........
+
+        Dims dims; // Dims describes data dims.
+
+        char name[MAX_BLOB_NAME + 1]; // blob name
+
+        Buffer *buffer = nullptr; // buffer blob data buffer,share_ptr manage?
+
     } Blob;
 
-    using BlobMap = std::map<std::string, Blob *>; // blob name, blob
+    using BlobMap = std::map<std::string, Blob *>; // BlobMap
 
-    using ShapeMap = std::map<std::string, Dims *>; // shape
+    using ShapeMap = std::map<std::string, Dims *>; // ShapeMap
 
-    // RS_PUBLIC
-    /*
-     * @brief 以下接口开放出来给全局使用，分配blob
-     *
+    /**
+     * @brief create a new blob by link information
+     * @param[in] device_type blob device type
+     * @param[in] data_type blob data type
+     * @param[in] data_format blob data format
+     * @param[in] name blob name
+     * @param[in] dims blob dims
+     * @return Blob *
      */
-    Blob *BlobAlloc(DeviceType device_type, DataType data_type, DataFormat data_format,
-                    const char *name, const Dims *dims); // 分配一个blob
+    RS_PUBLIC Blob *BlobAlloc(DeviceType device_type, DataType data_type, DataFormat data_format,
+                              const char *name, const Dims *dims); // 分配一个blob
 
-    // RS_PUBLIC
-    Blob *BlobMake(DeviceType device_type, DataType data_type, DataFormat data_format, const char *name, const Dims *dims);
+    /**
+     * @brief make a new blob by reference a data
+     * @param[in] device_type blob device type
+     * @param[in] data_type blob data type
+     * @param[in] data_format blob data format
+     * @param[in] name blob name
+     * @param[in] dims blob dims
+     * @param[in] blob_data data pointer
+     * @return Blob *
+     */
+    RS_PUBLIC Blob *BlobMake(DeviceType device_type, DataType data_type, DataFormat data_format,
+                             const char *name, const Dims *dims, void *blob_data);
 
-    void *BlobBufferGet(Blob *blob);
+    /**
+     * @brief get a blob data size information
+     * @param[in] blob blob pointer
+     * @return size_t blob size
+     */
+    RS_PUBLIC size_t BlobSizeGet(const Blob *blob);
 
-    size_t BlobSizeGet(Blob *blob);
+    /**
+     * @brief between two same condition blob memory copy
+     * @param[in] src_blob src blob pointer
+     * @param[in] dst_blob dst blob pointer
+     * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
+     */
+    RS_PUBLIC ErrorCode BlobCopy(const Blob *src_blob, Blob *dst_blob);
 
-    ErrorCode BlobCopy(Blob *dst_blob, Blob *src_blob);
-
-    ErrorCode BlobFree(Blob *blob);
+    /**
+     * @brief free a blob
+     * @param[in] blob blob pointer
+     * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
+     */
+    RS_PUBLIC ErrorCode BlobFree(Blob *blob);
 } // namespace rayshape
 
 #endif

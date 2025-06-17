@@ -10,18 +10,18 @@ namespace rayshape
 {
     namespace utils
     {
-        size_t CalculateDims(const Dims &dims)
-        {
+        static size_t CalculateDims(const Dims &dims) {
             size_t result = 1;
-            for (int i = 0; i < dims.size; i++)
-            {
+            if (dims.size == 0) {
+                return 0;
+            }
+            for (int i = 0; i < dims.size; i++) {
                 result *= dims.value[i];
             }
             return result;
         }
 
-        size_t CalculateMemorySize(const Dims &dims, const DataType &data_type)
-        {
+        static size_t CalculateMemorySize(const Dims &dims, const DataType &data_type) {
             size_t dims_size = CalculateDims(dims);
 
             int type_size = GetBytesSize(data_type); // 为0的情况
@@ -31,7 +31,7 @@ namespace rayshape
             return byte_size;
         }
 
-    }
-}
+    } // namespace utils
+} // namespace rayshape
 
 #endif

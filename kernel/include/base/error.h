@@ -2,12 +2,11 @@
 #define _ERROR_H_
 
 #include "glic_stl_include.h"
+#include "logger.h"
 
 namespace rayshape
 {
-
-    enum ErrorCode
-    {
+    enum ErrorCode {
         RS_SUCCESS = 0,
 
         // param errcode
@@ -26,6 +25,8 @@ namespace rayshape
         RS_INVALID_LICENSE = 0x3000,
         RS_INVALID_FILE = 0x3001,
         RS_OUTOFMEMORY = 0x3002,
+        RS_NOT_IMPLEMENT = 0x3003,
+        RS_INVALID_JSON = 0x3004,
 
         // device errcode
         RS_DEVICE_NOT_SUPPORT = 0x4000,
@@ -35,7 +36,6 @@ namespace rayshape
         RS_CUDA_TENSORRT_ERROR = 0x5000,
         RS_CUDA_MEMCPY_ERROR = 0x5001
     };
-
 }
 
 #endif

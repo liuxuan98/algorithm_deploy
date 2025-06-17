@@ -16,10 +16,11 @@ set(RS_VERSION "${RS_MAJOR_VERSION}.${RS_MINOR_VERSION}.${RS_PATCH_VERSION}.${RS
 option(ENABLE_BUILD_SHARED "Build Shared Library" ON)
 option(ENABLE_SYMBOL_HIDE "Enable Symbol Hide" OFF)
 option(ENABLE_COVERAGE "Enable Coverage" OFF) ##注意变量的缩进可能会导致 导致cmake的警告
-option(ENABLE_GLIBCXX_USE_CXX17_ABI "Enable Use CXX17 ABI" ON)
-option(ENABLE_GLIBCXX_USE_CXX14_ABI "Enable Use CXX14 ABI" OFF)
+option(ENABLE_GLIBCXX_USE_CXX17_ABI "Enable Use CXX17 ABI" OFF)
+option(ENABLE_GLIBCXX_USE_CXX14_ABI "Enable Use CXX14 ABI" ON)
 option(ENABLE_GLIBCXX_USE_CXX11_ABI "Enable Use CXX11 ABI" OFF)
 option(ENABLE_TIME_PROFILER "Enable Time Profiler " OFF)
+option(ENABLE_RAPIDJSON "Enable RapidJson ThirdParty" ON)
 
 # # base
 option(ENABLE_BASE "Enable Base Compile" ON) ## 编译必须的macro 
@@ -40,7 +41,10 @@ option(ENABLE_KERNEL "Enable Complie kernel" ON)  ## 编译kernel 部分总开�
 
 option(ENABLE_SAMPLE "Enable Compilie Sample" ON)
 
+option(ENABLE_TEST "Enable Complie Test" ON) 
+
 # # set 3rd party install
+option(ENABLE_3RD_OPENVINO "Enable 3rd Party" ON)
 option(ENABLE_3RD_OPENVINO "Enable 3rd Party" ON)
 option(ENABLE_3RD_OPENCV "Enable 3rd Party" ON)
 
@@ -71,10 +75,6 @@ message(STATUS "\tProcessor: ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "\tBUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message(STATUS ">>>>>>>>>>>>>")
 
-# install path
-set(PROJECT_INSTALL_PATH ${ROOT_PATH}/build/install) #路径设定死板是否合适？
-set(CMAKE_INSTALL_PREFIX ${PROJECT_INSTALL_PATH})
-
 #compile
 include(${ROOT_PATH}/cmake/common/platform.cmake)
 
@@ -84,10 +84,6 @@ if(ENABLE_KERNEL)
     add_subdirectory(kernel)
 endif()
 
-# if(ENABLE_TEST)
-#     add_subdirectory(test)
-# endif()
-
 # if(ENABLE_MODULE)
 #     add_subdirectory(module)
 # endif()
@@ -95,6 +91,10 @@ message(STATUS "ENABLE_SAMPLE VALUE = ${ENABLE_SAMPLE}")
 
 if(ENABLE_SAMPLE)
     add_subdirectory(sample)
+endif()
+
+if(ENABLE_TEST)
+    add_subdirectory(test)
 endif()
 
 

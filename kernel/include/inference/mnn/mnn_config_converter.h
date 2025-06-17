@@ -7,10 +7,11 @@ namespace rayshape
 {
     namespace mnn
     {
-        class MnnConfigConverter
-        {
+        class MnnConfigConverter {
         public: // Fp16 ,unint8 ,fp32
-            static ErrorCode ConvertFromNetworkConfig(MNN::ScheduleConfig &schedule_config, DeviceType device_type, int num_threads, Precision precision);
+            static ErrorCode ConvertFromNetworkConfig(MNN::ScheduleConfig &schedule_config,
+                                                      DeviceType device_type, int num_threads,
+                                                      Precision precision);
         };
 
     } // namespace mnn

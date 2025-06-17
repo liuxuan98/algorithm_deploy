@@ -14,8 +14,7 @@ namespace rayshape
     namespace inference
     {
 
-        class MnnNetwork : public Inference
-        {
+        class MnnNetwork: public Inference {
         public:
             MnnNetwork(InferenceType type);
             virtual ~MnnNetwork();
@@ -23,7 +22,8 @@ namespace rayshape
             virtual ErrorCode Init(const Model *model, const CustomRuntimeV2 *runtime);
             virtual void DeInit();
 
-            virtual ErrorCode Reshape(const char **name_arr, const Dims *dims_arr, size_t dims_size);
+            virtual ErrorCode Reshape(const char **name_arr, const Dims *dims_arr,
+                                      size_t dims_size);
             virtual ErrorCode Forward();
             virtual ErrorCode InputBlobsGet(const Blob ***blob_arr, size_t *blob_size);
             virtual ErrorCode OutputBlobsGet(const Blob ***blob_arr, size_t *blob_size);
@@ -34,8 +34,8 @@ namespace rayshape
 
         private:
             ErrorCode Reshape();
-            ErrorCode InitWithJson(
-                Model model, const CustomRuntimeV2 *runtime, const JsonHandle json_handle);
+            ErrorCode InitWithJson(Model model, const CustomRuntimeV2 *runtime,
+                                   const JsonHandle json_handle);
 
             ErrorCode ParseInputShapes(const JsonHandle json_handle); // rapid_json 三方库解析
 
@@ -62,7 +62,7 @@ namespace rayshape
             bool gpu_blob_ = false;
         };
 
-    }
-} // namespace rayshape::inference
+    } // namespace inference
+} // namespace rayshape
 
 #endif // MNN_NETWORK_H_

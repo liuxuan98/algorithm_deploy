@@ -52,4 +52,10 @@
 #define RS_MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
+/**
+ * @brief string
+ *
+ */
+#define RS_DEFAULT_STR ""
+
 #endif //_MACROS_H_

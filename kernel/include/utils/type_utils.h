@@ -7,39 +7,27 @@ namespace rayshape
 {
     namespace utils
     {
-        int GetBytesSize(const DataType &data_type)
-        {
-            if (data_type == DATA_TYPE_FLOAT)
-            {
+        static unsigned int GetBytesSize(const DataType &data_type) {
+            if (data_type == DATA_TYPE_FLOAT) {
                 return 4;
-            }
-            else if (data_type == DATA_TYPE_HALF)
-            {
+            } else if (data_type == DATA_TYPE_HALF) {
                 return 2;
-            }
-            else if (data_type == DATA_TYPE_INT8)
-            {
+            } else if (data_type == DATA_TYPE_INT8) {
                 return 1;
-            }
-            else if (data_type == DATA_TYPE_INT32)
-            {
+            } else if (data_type == DATA_TYPE_UINT8) {
+                return 1;
+            } else if (data_type == DATA_TYPE_INT32) {
                 return 4;
-            }
-            else if (data_type == DATA_TYPE_INT64)
-            {
+            } else if (data_type == DATA_TYPE_INT64) {
                 return 8;
-            }
-            else if (data_type == DATA_TYPE_UINT32)
-            {
+            } else if (data_type == DATA_TYPE_UINT32) {
                 return 4;
-            }
-            else
-            {
+            } else {
                 // log
                 return 0;
             }
         }
-    }
-}
+    } // namespace utils
+} // namespace rayshape
 
 #endif

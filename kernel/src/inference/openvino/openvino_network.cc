@@ -3,6 +3,7 @@
 #include "inference/openvino/openvino_blob_converter.h"
 #include "inference/openvino/openvino_config_converter.h"
 #include "utils/blob_utils.h"
+#include "base/logger.h"
 
 using namespace rayshape::openvino;
 using namespace rayshape::utils;
@@ -16,191 +17,333 @@ namespace rayshape
 
         OpenVinoNetWork::OpenVinoNetWork(InferenceType type) : Inference(type) {}
 
-        OpenVinoNetWork::~OpenVinoNetWork()
-        {
+        OpenVinoNetWork::~OpenVinoNetWork() {
             ClearBlobArray();
         }
 
-        ErrorCode OpenVinoNetWork::Init(const Model *model, const CustomRuntime *runtime)
-        {
+        ErrorCode OpenVinoNetWork::Init(const Model *model, const CustomRuntime *runtime) {
             return RS_SUCCESS;
         }
 
-        ErrorCode OpenVinoNetWork::Init(const std::string &xml_path, const std::string &bin_path)
-        {
+        ErrorCode OpenVinoNetWork::Init(const std::string &xml_path, const std::string &bin_path) {
             // 应该是有一个json解析的过程
             // 这里暂时先用xml和对应bin进行初始化后续更改变动
+            RS_LOGD("OpenVinoNetWork Init!\n");
+
             ErrorCode ret = RS_SUCCESS;
-            JsonHandle json_handle = nullptr;
-            if ((ret = ParseInputShapes(json_handle)) != RS_SUCCESS)
+
+            RSJsonHandle json_handle = nullptr;
+            // std::string model_json_path = "D:/Program/rayshape_deploy/model.json";
+            // std::ifstream in(model_json_path, std::ios::binary);
+            // if (!in.is_open())
+            // {
+            //     RS_LOGE("model json file open failed!\n");
+            // }
+            // std::string json_content((std::istreambuf_iterator<char>(in)),
+            // std::istreambuf_iterator<char>()); std::cout << "Read content: " << json_content <<
+            // std::endl;
+
+            // size_t content_size = json_content.size();
+            // void *content = (void *)json_content.c_str();
+            // ret = RSJsonCreate(content, content_size, &json_handle);
+            // if (ret != RS_SUCCESS)
+            // {
+            //     RS_LOGE("RSJsonCreate failed:%d\n", ret);
+            //     return ret;
+            // }
+
+            std::string src_json = R"({
+                "version": "1.0",
+                "description" : "A model for image classification",
+                "ModelConfig" : {
+                "IsDynamic": false,
+                    "MaxShapes" : [
+                {
+                    "name": "image",
+                        "dims" : [
+                            1,
+                                3,
+                                1024,
+                                1024
+                        ]
+                },
             {
-                // log todo
-                return ret;
+                "name": "intput1",
+                "dims" : [
+                    1,
+                    3,
+                    1024,
+                    1024
+                ]
             }
+                    ]
+            },
+                "NetworkConfig": {
+                        "DeviceType": "DEVICE_TYPE_CPU",
+                            "ThreadNum" : 4,
+                            "Precision" : "FP32",
+                            "CachePath" : ""
+                    },
+                    "Others": {}
+            })";
             device_type_ = DEVICE_TYPE_X86; // 固定设备类型，这个参数实际上通过runtime得到
-            if ((ret = InitWithXml(xml_path, bin_path)) != RS_SUCCESS)
+
+            if ((ret = RSJsonCreate(src_json, &json_handle)) != RS_SUCCESS) // 从加密模型得到
             {
-                // log todo
-                return ret;
+                RS_LOGE("RSJsonCreate failed:%d\n", ret);
+                goto __end;
             }
 
-            if ((ret = Reshape()) != RS_SUCCESS)
-            {
-                // log todo
-                return ret;
+            if ((ret = ParseInputShapes(json_handle)) != RS_SUCCESS) {
+                RS_LOGE("ParseInputShapes failed:%d!\n", ret);
+                goto __end;
             }
 
-            if ((ret = CreateBlobArray()) != RS_SUCCESS)
+            if ((ret = InitWithXml(xml_path, bin_path)) != RS_SUCCESS) // Init with model
             {
-                return ret;
+                RS_LOGE("InitWithXml failed:%d!\n", ret);
+                goto __end;
+            }
+
+            if ((ret = Reshape()) != RS_SUCCESS) {
+                RS_LOGE("Reshape failed:%d!\n", ret);
+                goto __end;
+            }
+
+            if ((ret = CreateBlobArray()) != RS_SUCCESS) {
+                RS_LOGE("CreateBlobArray failed:%d!\n", ret);
+                goto __end;
+            }
+        __end:
+            if (json_handle != nullptr) {
+                RSJsonDestory(&json_handle);
             }
 
             return ret;
         }
 
-        void OpenVinoNetWork::DeInit()
-        {
-        }
+        void OpenVinoNetWork::DeInit() {}
 
         ErrorCode OpenVinoNetWork::InitWithXml(const std::string &xml_path,
-                                               const std::string &bin_path)
-        {
-
+                                               const std::string &bin_path) {
             ErrorCode ret = RS_SUCCESS;
             core_.reset(new ov::Core());
 
             std::string device_name = "CPU";
-            if (device_type_ == DEVICE_TYPE_X86)
-            {
+            if (device_type_ == DEVICE_TYPE_X86) {
                 device_name = "CPU";
-            }
-            else
-            {
+            } else {
                 std::string cache_dir = "cache_dir";
                 device_name = "GPU";
                 core_->set_property(ov::cache_dir(cache_dir));
             }
-            try
-            {
+            try {
                 model_ = core_->read_model(xml_path, bin_path);
 
                 // compiled_model_ = core_->compile_model(model_, device_name);
                 // infer_request_ = compiled_model_.create_infer_request();
-            }
-            catch (const ov::Exception &e)
-            {
-                //..log
-                printf("read_model openvino model failed: %s\n", e.what());
+            } catch (const ov::Exception &e) {
+                RS_LOGE("read_model openvino model failed: %s\n", e.what());
                 return RS_MODEL_ERROR;
             }
 
             return ret;
         }
 
-        ErrorCode OpenVinoNetWork::ParseInputShapes(const JsonHandle json_handle)
-        {
+        ErrorCode OpenVinoNetWork::ParseInputShapes(const RSJsonHandle json_handle) {
             ErrorCode ret = RS_SUCCESS;
-            // 使用json array 获得
-            unsigned int size = 0; // json_handle->size();
-            for (unsigned int i = 0; i < size; i++)
-            {
-                std::string name_str = "input_" + std::to_string(i);
-                const char *name = name_str.c_str(); // MagicXEJsonObject name_obj = MagicXEJsonObjectGet(shape_obj, "name");
-                //  const char *name = MagicXEJsonStringGet(name_obj);
 
-                // 判断命名是否符合长度规范
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME)
-                {
-                    return RS_MODEL_ERROR;
+            RSJsonObject root_obj = RSJsonRootGet(json_handle);
+            /*if (root_obj.HasMember("ModelConfig")) {
+                RSJsonObject tmp_obj = root_obj["ModelConfig"].GetObject();
+                if (tmp_obj.HasMember("IsDynamic")) {
+                    bool tmp_obj_01 = tmp_obj["IsDynamic"].GetBool();
+                    RSJsonObject tmp_obj_0 = tmp_obj["IsDynamic"].GetObject();
+                    if (tmp_obj_0.IsBool()) {
+
+                        bool t_b = true;
+                        t_b = tmp_obj_0.GetBool();
+
+                        std::cout << "is dynamic" << t_b << std::endl;
+                    }
                 }
+                if (tmp_obj.HasMember("MaxShapes")) {
+                    RSJsonObject tmp_obj_0 = tmp_obj["MaxShapes"].GetObject();
+                    if (tmp_obj_0.IsArray()) {
 
+                      unsigned int tmp = tmp_obj_0.GetArray().Size();
+                      std::cout << tmp << std::endl;
+                    }
+                    std::cout << "is MaxShapes" << std::endl;
+                }
+            }*/
+            RSJsonObject model_obj = RSJsonObjectGet(root_obj, "ModelConfig");
+            if (model_obj == NULL) {
+                RS_LOGE("key ModelConfig's value is empty!\n");
+                return RS_INVALID_PARAM;
+            }
+            RSJsonObject max_shapes_arr = RSJsonObjectGet(model_obj, "MaxShapes");
+            if (max_shapes_arr == NULL) {
+                return RS_SUCCESS;
+            }
+
+            //
+            unsigned int size = RSJsonArraySize(max_shapes_arr);
+            for (unsigned int i = 0; i < size; i++) {
+                RSJsonObject shape_obj = RSJsonArrayAt(max_shapes_arr, i);
+                RSJsonObject name_obj = RSJsonObjectGet(shape_obj, "name");
+                const char *name = RSJsonStringGet(name_obj);
+                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                    RS_LOGE("InputMaxShape Name is empty or > MAX_DIMS_NAME:%d!\n", MAX_BLOB_NAME);
+                    return RS_INVALID_MODEL;
+                }
                 // 获取维度对象
-
-                unsigned int dims_size = 4;
+                RSJsonObject dims_arr = RSJsonObjectGet(shape_obj, "dims");
+                if (dims_arr == NULL) {
+                    RS_LOGE("InputMaxShape Dims is Error!\n");
+                    return RS_INVALID_MODEL;
+                }
                 // 获取维度的size
+                unsigned int dims_size = RSJsonArraySize(dims_arr);
+                if (dims_size <= 0 || dims_size > MAX_DIMS_SIZE) {
+                    RS_LOGE("InputMaxShape Dims size:%d is empty or > MAX_DIMS_SIZE:%d!\n",
+                            dims_size, MAX_DIMS_SIZE);
+                    return RS_INVALID_MODEL;
+                }
 
                 Dims dims;
                 dims.size = dims_size;
 
-                for (unsigned int j = 0; j < dims_size; j++)
-                {
-                    dims.value[i] = 0; // MagicXEJsonIntGet(MagicXEJsonArrayAt(dims_arr, j), 0);
+                for (unsigned int j = 0; j < dims_size; j++) {
+                    dims.value[j] = RSJsonIntGet(RSJsonArrayAt(dims_arr, j), 0);
                 }
-                input_max_shapes_[name_str] = dims;
+                input_max_shapes_[name] = dims;
             }
 
             return RS_SUCCESS;
         }
 
-        ErrorCode OpenVinoNetWork::Reshape(const char **name_arr, const Dims *dims_arr, size_t dims_size)
-        {
-            return RS_SUCCESS;
+        ErrorCode OpenVinoNetWork::Reshape(const char **name_arr, const Dims *dims_arr,
+                                           size_t dims_size) {
+            ErrorCode ret = RS_SUCCESS;
+
+            if (name_arr == nullptr || dims_arr == nullptr) {
+                RS_LOGE("Invalid input parameters for Reshape.\n");
+                return RS_INVALID_PARAM;
+            }
+            // dynamic_model need to reshape
+            bool reshape_flag = false;
+            // std::map<std::string, ov::PartialShape> ov_shape_w;
+            std::map<ov::Output<ov::Node>, ov::PartialShape> ov_shape_map;
+            for (int i = 0; i < dims_size; ++i) {
+                const char *name = name_arr[i];
+                const Dims *dims = &dims_arr[i];
+                bool tensor_flag = false;
+
+                if (name == nullptr) {
+                    RS_LOGE("Input name at index %d is null.\n", i);
+                    return RS_INVALID_PARAM;
+                }
+
+                ov::Output<ov::Node> input = model_->input(name); // name must be valid
+                const ov::Shape &ov_origin_shape = input.get_shape();
+                if (ov_origin_shape.size() != dims->size) {
+                    tensor_flag = true;
+                } else {
+                    for (int i = 0; i < dims->size; ++i) {
+                        if (dims->value[i] != ov_origin_shape[i]) {
+                            tensor_flag = true; // 尺寸没对上
+                            break;
+                        }
+                    }
+                }
+
+                // get input tensor
+
+                if (tensor_flag) {
+                    std::vector<ov::Dimension> ov_dims;
+                    for (size_t j = 0; j < dims->size; ++j) {
+                        ov_dims.emplace_back(dims->value[j]);
+                    }
+
+                    // ov_shape_w[name] = ov::PartialShape(ov_dims);
+                    ov_shape_map[input] = ov::PartialShape(ov_dims);
+                    reshape_flag = true;
+                }
+            }
+            // model_->input()
+            if (reshape_flag) {
+                try {
+                    // 重新编译模型
+                    model_->reshape(ov_shape_map);
+                    // 设置新的形状
+                    compiled_model_ =
+                        core_->compile_model(model_, "CPU"); // 可根据 device_type_ 动态选择设备
+                    infer_request_ = compiled_model_.create_infer_request();
+                    CreateBlobArray();
+                } catch (const ov::Exception &e) {
+                    RS_LOGE("Failed to recompile model after reshape: %s.\n", e.what());
+                    return RS_MODEL_ERROR;
+                }
+            }
+
+            return ret;
         }
         // 写入 resize
-        ErrorCode OpenVinoNetWork::Reshape()
-        {
+        ErrorCode OpenVinoNetWork::Reshape() {
             ErrorCode ret = RS_SUCCESS;
-            if (input_max_shapes_.size() > 0)
-            {
+            bool is_dynamic_model = model_->is_dynamic();
+            if (is_dynamic_model && input_max_shapes_.size() > 0) {
                 std::map<std::string, ov::PartialShape> ov_shape;
-                for (auto it : input_max_shapes_)
-                {
+                for (const auto &it : input_max_shapes_) {
                     const std::string name = it.first;
 
                     const Dims &dims = it.second;
 
                     std::vector<ov::Dimension> ov_dims;
-                    for (size_t i = 0; i < dims.size; i++)
-                    {
+                    for (size_t i = 0; i < dims.size; i++) {
                         ov_dims.emplace_back(dims.value[i]);
                     }
-                    // 是否需要转格式
+                    // 转格式
                     ov_shape[name] = ov::PartialShape(ov_dims);
                 }
                 model_->reshape(ov_shape);
             }
             // 完成多个最大输入的reshape
-            try
-            {
+            try {
                 compiled_model_ = core_->compile_model(model_, "CPU"); // 是否要reset
                 infer_request_ = compiled_model_.create_infer_request();
-            }
-            catch (const ov::Exception &e)
-            {
-
-                printf("compile openvino model failed: %s\n", e.what());
+            } catch (const ov::Exception &e) {
+                RS_LOGE("compile openvino model failed: %s\n", e.what());
                 return RS_MODEL_ERROR;
             }
             return ret;
         }
 
-        ErrorCode OpenVinoNetWork::CreateBlobArray()
-        {
+        ErrorCode OpenVinoNetWork::CreateBlobArray() {
             ErrorCode ret = RS_SUCCESS;
             ClearBlobArray();
 
             const std::vector<ov::Output<ov::Node>> &inputs = model_->inputs();
             size_t input_count = inputs.size();
-            if (input_count <= 0)
-            {
-                // log todo
+            if (input_count <= 0) {
+                RS_LOGE("openvino model inputs count:%zu error.\n", input_count);
                 return RS_INVALID_MODEL;
             }
             input_blob_arr_ = (Blob **)malloc(sizeof(Blob *) * input_count);
-            if (input_blob_arr_ == nullptr)
-            {
-                // 错误日志
+            if (input_blob_arr_ == nullptr) {
+                RS_LOGE("input blobs malloc Blob:%d * size:%zu failed \n", (int)sizeof(Blob),
+                        input_count);
                 return RS_OUTOFMEMORY;
             }
             memset(input_blob_arr_, 0, sizeof(Blob *) * input_count);
 
-            for (const auto input : inputs)
-            {
+            for (const auto input : inputs) {
                 std::string name_str = input.get_any_name();
                 const char *name = name_str.c_str();
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME)
-                {
-                    // 打印日志,
+                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                    RS_LOGE("get input name:%s len:%zd failed\n", name != NULL ? name : "",
+                            name != NULL ? strlen(name) : 0);
                     ClearBlobArray(); // 清除分配的内存
                     return RS_INVALID_MODEL;
                 }
@@ -211,10 +354,10 @@ namespace rayshape
                 std::string tmp_layout = input_layout.to_string();
                 size_t name_size1 = strlen(name);
                 size_t name_size = sizeof(name);
-                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(&input_blob_arr_[input_blob_size_++], ov_tensor, name, false);
-                if (ret != RS_SUCCESS)
-                {
-                    // LOGE ("CreateOrUpdateBlob failed");
+                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(
+                    &input_blob_arr_[input_blob_size_++], ov_tensor, name, false);
+                if (ret != RS_SUCCESS) {
+                    RS_LOGE("OpenvinoBlobConverter::CreateOrUpdateBlob failed:%d!\n", ret);
                     ClearBlobArray();
                     return ret;
                 }
@@ -222,36 +365,35 @@ namespace rayshape
 
             const std::vector<ov::Output<ov::Node>> &outputs = model_->outputs();
             size_t output_count = outputs.size();
-            if (output_count <= 0)
-            {
-                // log todo
+            if (output_count <= 0) {
+                RS_LOGE("openvino model outputs count:%zu error.\n", output_count);
                 ClearBlobArray();
                 return RS_INVALID_MODEL;
             }
 
             output_blob_arr_ = (Blob **)malloc(sizeof(Blob *) * output_count);
-            if (output_blob_arr_ == nullptr)
-            {
-                // RS_LOGE("Output blobs malloc Blob:%d * size:%zu failed", sizeof(Blob), output_count);
+            if (output_blob_arr_ == nullptr) {
+                RS_LOGE("output blobs malloc Blob:%zd * size:%zu failed\n", sizeof(Blob),
+                        output_count);
                 ClearBlobArray();
                 return RS_OUTOFMEMORY;
             }
             memset(output_blob_arr_, 0, sizeof(Blob *) * output_count);
-            for (const auto output : outputs)
-            {
+            for (const auto output : outputs) {
                 std::string output_name = output.get_any_name();
                 const char *name = output_name.c_str();
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME)
-                {
-                    // RS_LOGE("GetOutputName:%s len:%d failed", name != NULL ? name : "", name != NULL ? strlen(name) : 0);
+                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                    RS_LOGE("get output name:%s len:%zd failed", name != NULL ? name : "",
+                            name != NULL ? strlen(name) : 0);
                     ClearBlobArray();
                     return RS_INVALID_MODEL;
                 }
                 ov::Tensor ov_tensor = infer_request_.get_tensor(output_name);
-                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(&output_blob_arr_[output_blob_size_++], ov_tensor, name, false); // 需不需要分配内存根据实际情况考虑
-                if (ret != RS_SUCCESS)
-                {
-                    // LOGE ("CreateOrUpdateBlob failed");
+                ret = OpenvinoBlobConverter::CreateOrUpdateBlob(
+                    &output_blob_arr_[output_blob_size_++], ov_tensor, name,
+                    false); // 需不需要分配内存根据实际情况考虑
+                if (ret != RS_SUCCESS) {
+                    RS_LOGE("OpenvinoBlobConverter::CreateOrUpdateBlob failed:%d!\n", ret);
                     ClearBlobArray();
                     return ret;
                 }
@@ -260,14 +402,10 @@ namespace rayshape
             return ret;
         }
 
-        void OpenVinoNetWork::ClearBlobArray()
-        {
-            if (input_blob_arr_ != nullptr && input_blob_size_ != 0)
-            {
-                for (size_t i = 0; i < input_blob_size_; ++i)
-                {
-                    if (input_blob_arr_[i])
-                    {
+        void OpenVinoNetWork::ClearBlobArray() {
+            if (input_blob_arr_ != nullptr && input_blob_size_ != 0) {
+                for (size_t i = 0; i < input_blob_size_; ++i) {
+                    if (input_blob_arr_[i]) {
                         BlobFree(input_blob_arr_[i]);
                     }
                 }
@@ -276,12 +414,9 @@ namespace rayshape
                 input_blob_size_ = 0;
             }
 
-            if (output_blob_arr_ != nullptr && output_blob_size_ != 0)
-            {
-                for (size_t i = 0; i < output_blob_size_; ++i)
-                {
-                    if (output_blob_arr_[i])
-                    {
+            if (output_blob_arr_ != nullptr && output_blob_size_ != 0) {
+                for (size_t i = 0; i < output_blob_size_; ++i) {
+                    if (output_blob_arr_[i]) {
                         BlobFree(output_blob_arr_[i]);
                     }
                 }
@@ -291,22 +426,18 @@ namespace rayshape
             }
         }
 
-        ErrorCode OpenVinoNetWork::Forward()
-        {
+        ErrorCode OpenVinoNetWork::Forward() {
             ErrorCode ret = RS_SUCCESS;
-            try
-            {
-                for (size_t i = 0; i < input_blob_size_; ++i)
-                {
+            try {
+                for (size_t i = 0; i < input_blob_size_; ++i) {
                     Blob *blob = input_blob_arr_[i];
                     Buffer *blob_buffer = blob->buffer;
-                    bool need_set_input = blob_buffer->GetAllocFlag();
-                    if (!need_set_input)
-                    {
+                    bool need_set_input = blob_buffer->GetExternalFlag();
+                    if (!need_set_input) {
                         const char *name = blob->name;
-                        std::shared_ptr<ov::Tensor> ov_tensor = OpenvinoBlobConverter::ConvertFromBlob(ret, blob);
-                        if (ov_tensor == nullptr || ret != RS_SUCCESS)
-                        {
+                        std::shared_ptr<ov::Tensor> ov_tensor =
+                            OpenvinoBlobConverter::ConvertFromBlob(ret, blob);
+                        if (ov_tensor == nullptr || ret != RS_SUCCESS) {
                             // log todo
                             return ret;
                         }
@@ -319,9 +450,7 @@ namespace rayshape
                 // forward
                 // infer_request_.start_async();
                 // infer_request_.wait();
-            }
-            catch (const ov::Exception &e)
-            {
+            } catch (const ov::Exception &e) {
                 printf("openvino model infer failed: %s\n", e.what());
                 return RS_MODEL_ERROR;
             }
@@ -329,17 +458,15 @@ namespace rayshape
             return ret;
         }
 
-        ErrorCode OpenVinoNetWork::InputBlobsGet(const Blob ***blob_arr, size_t *blob_size)
-        {
-            if (blob_arr == nullptr || blob_size == nullptr)
-            {
-                // log todo
+        ErrorCode OpenVinoNetWork::InputBlobsGet(const Blob ***blob_arr, size_t *blob_size) {
+            if (blob_arr == nullptr || blob_size == nullptr) {
+                RS_LOGE("blob_arr:%p or blob_size:%p is nullptr\n", blob_arr, blob_size);
                 return RS_INVALID_PARAM;
             }
 
-            if (input_blob_arr_ == nullptr || input_blob_size_ <= 0)
-            {
-                // log todo
+            if (input_blob_arr_ == nullptr || input_blob_size_ <= 0) {
+                RS_LOGE("input_blob_arr_:%p is nullptr or input_blob_size_:%zu <= 0\n",
+                        input_blob_arr_, input_blob_size_);
                 return RS_INVALID_MODEL;
             }
 
@@ -349,16 +476,15 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        ErrorCode OpenVinoNetWork::OutputBlobsGet(const Blob ***blob_arr, size_t *blob_size)
-        {
-            if (blob_arr == nullptr || blob_size == nullptr)
-            {
-                // log todo
+        ErrorCode OpenVinoNetWork::OutputBlobsGet(const Blob ***blob_arr, size_t *blob_size) {
+            if (blob_arr == nullptr || blob_size == nullptr) {
+                RS_LOGE("blob_arr:%p or blob_size:%p is nullptr\n", blob_arr, blob_size);
                 return RS_INVALID_PARAM;
             }
 
-            if (output_blob_arr_ == nullptr || output_blob_size_ <= 0)
-            {
+            if (output_blob_arr_ == nullptr || output_blob_size_ <= 0) {
+                RS_LOGE("output_blob_arr_:%p is nullptr or output_blob_size_:%zu <= 0\n",
+                        output_blob_arr_, output_blob_size_);
                 return RS_INVALID_MODEL;
             }
 
@@ -368,42 +494,35 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        ErrorCode OpenVinoNetWork::InputBlobGet(const char *input_name, Blob **blob)
-        {
-            if (input_blob_arr_ == nullptr || blob == nullptr || input_blob_size_ <= 0)
-            {
-                // log todo
+        ErrorCode OpenVinoNetWork::InputBlobGet(const char *input_name, Blob **blob) {
+            if (input_blob_arr_ == nullptr || blob == nullptr || input_blob_size_ <= 0) {
+                RS_LOGE("blob:%p input_blob_arr_ is nullptr or input_blob_size_:%zu is empty\n",
+                        blob, input_blob_size_);
                 return RS_INVALID_MODEL;
             }
 
             int index = -1;
             *blob = FindBlobAndIndexByName(input_blob_arr_, input_blob_size_, input_name, &index);
-            if (*blob == NULL)
-            {
-                // RS_LOGE("Not Find Blob name:%s", input_name != nullptr ? input_name : "");
+            if (*blob == NULL) {
+                RS_LOGE("Not find Blob name:%s\n", input_name != nullptr ? input_name : "");
                 return RS_INVALID_PARAM;
             }
 
             return RS_SUCCESS;
         }
 
-        ErrorCode OpenVinoNetWork::OutputBlobGet(const char *output_name, const Blob **blob)
-        {
-            if (output_blob_arr_ == nullptr)
-            {
-                // RS_LOGE("output_blob_arr_ is nullptr");
-                return RS_INVALID_MODEL;
-            }
-            if (output_blob_size_ <= 0)
-            {
-                // RS_LOGE("output_blob_size_:%d is empty", output_blob_size_);
+        ErrorCode OpenVinoNetWork::OutputBlobGet(const char *output_name, const Blob **blob) {
+            if (output_blob_arr_ == nullptr || blob == nullptr || output_blob_size_ <= 0) {
+                RS_LOGE("blob:%p output_blob_arr_ is nullptr or output_blob_size_:%zu is empty\n",
+                        blob, output_blob_size_);
                 return RS_INVALID_MODEL;
             }
 
             int index = -1; // 这个接口放在工具api中
-            Blob *find_blob = FindBlobAndIndexByName(output_blob_arr_, output_blob_size_, output_name, &index);
-            if (find_blob == nullptr)
-            {
+            Blob *find_blob =
+                FindBlobAndIndexByName(output_blob_arr_, output_blob_size_, output_name, &index);
+            if (find_blob == nullptr) {
+                RS_LOGE("Not find Blob name:%s\n", output_name != nullptr ? output_name : "");
                 return RS_INVALID_PARAM;
             }
             //*find_blob = *output_blob_arr_[index];

@@ -8,8 +8,9 @@ namespace rayshape
 {
     // remove namespace common
     // common enum type or data structure.
-    typedef enum
-    {
+    typedef enum {
+        // none
+        DATA_TYPE_NONE = -2,
         // auto
         DATA_TYPE_AUTO = -1,
         // float
@@ -18,17 +19,18 @@ namespace rayshape
         DATA_TYPE_HALF = 1,
         // int8
         DATA_TYPE_INT8 = 2,
+        // uint8
+        DATA_TYPE_UINT8 = 3,
         // int32
-        DATA_TYPE_INT32 = 3,
+        DATA_TYPE_INT32 = 4,
         // int64
-        DATA_TYPE_INT64 = 4,
+        DATA_TYPE_INT64 = 5,
         // uint32
-        DATA_TYPE_UINT32 = 5
+        DATA_TYPE_UINT32 = 6
 
     } DataType;
 
-    typedef enum
-    {
+    typedef enum {
         // decided by device
         DATA_FORMAT_AUTO = -1,
         DATA_FORMAT_NC = 0,
@@ -38,8 +40,7 @@ namespace rayshape
         DATA_FORMAT_NCDHW = 4
     } DataFormat;
 
-    typedef enum
-    { // inference/nn network type
+    typedef enum { // inference/nn network type
         INFERENCE_TYPE_NONE = 0x0000,
         INFERENCE_TYPE_OPENVINO = 0x1000,
         INFERENCE_TYPE_TENSORRT = 0x2000,
@@ -48,8 +49,7 @@ namespace rayshape
 
     } InferenceType;
 
-    typedef enum
-    { // prase model type
+    typedef enum { // prase model type
         MODEL_TYPE_NONE = 0x0000,
         MODEL_TYPE_OPENVINO = 0x1000,
         MODEL_TYPE_TENSORRT = 0x2000,
@@ -57,8 +57,7 @@ namespace rayshape
         MODEL_TYPE_NCNN = 0x4000
     } ModelType;
 
-    typedef enum
-    {
+    typedef enum {
         DEVICE_TYPE_NONE = 0x0000,
         DEVICE_TYPE_CPU = 0x0010,
         DEVICE_TYPE_X86 = 0x0020,
@@ -71,24 +70,21 @@ namespace rayshape
 
     } DeviceType;
 
-    typedef enum
-    {
+    typedef enum {
         MEM_TYPE_NONE = -1,
         MEM_TYPE_HOST = 0,  // cpu /x86 /arm host memory
         MEM_TYPE_CUDA = 1,  // nvidia gpu memory
         MEM_TYPE_OPENCL = 2 // opencl(intel_gpu/nvidia,arm,amd,qualcomm) gpu memory
     } MemoryType;
 
-    typedef enum
-    {
+    typedef enum {
         PRECISION_AUTO = -1,
         PRECISION_NORMAL = 0,
         PRECISION_HIGH = 1,
         PRECISION_LOW = 2
     } Precision;
 
-    typedef struct CustomRuntime
-    {
+    typedef struct CustomRuntime {
         DeviceType device_type = DEVICE_TYPE_NONE;
         InferenceType inference_type = INFERENCE_TYPE_NONE;
         ModelType model_type = MODEL_TYPE_NONE;

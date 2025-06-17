@@ -3,8 +3,11 @@
 
 #include "inference/inference.h"
 #include "openvino_include.h"
+#include "utils/json_utils.h"
 
-typedef void *JsonHandle;
+using namespace rayshape::utils;
+
+// typedef void *JsonHandle;
 
 namespace rayshape
 {
@@ -13,18 +16,19 @@ namespace rayshape
 
         // std::string xml = ""; // json_file
 
-        class OpenVinoNetWork : public Inference
-        {
+        class OpenVinoNetWork: public Inference {
         public:
             OpenVinoNetWork(InferenceType type);
             ~OpenVinoNetWork() override;
 
             ErrorCode Init(const Model *model, const CustomRuntime *runtime) override;
 
-            ErrorCode Init(const std::string &xml_path, const std::string &bin_path) override; // 重载的init 函数
+            ErrorCode Init(const std::string &xml_path,
+                           const std::string &bin_path) override; // 重载的init 函数
             void DeInit() override;
 
-            ErrorCode Reshape(const char **name_arr, const Dims *dims_arr, size_t dims_size) override;
+            ErrorCode Reshape(const char **name_arr, const Dims *dims_arr,
+                              size_t dims_size) override;
             ErrorCode Forward() override;
 
             ErrorCode InputBlobsGet(const Blob ***blob_arr, size_t *blob_size) override;
@@ -33,16 +37,17 @@ namespace rayshape
             ErrorCode OutputBlobGet(const char *output_name, const Blob **blob) override;
 
         private:
-            // ErrorCode WriteXmlFile(const std::string &utf8_file_path, const std::string &xml_file_path,std::string bin_data);
+            // ErrorCode WriteXmlFile(const std::string &utf8_file_path, const std::string
+            // &xml_file_path,std::string bin_data);
 
-            ErrorCode InitWithXml(const std::string &xml_path,
-                                  const std::string &bin_path);
+            ErrorCode InitWithXml(const std::string &xml_path, const std::string &bin_path);
 
-            ErrorCode InitWithJson(
-                Model model, const CustomRuntime *runtime, const JsonHandle json_handle);
+            ErrorCode InitWithJson(Model model, const CustomRuntime *runtime,
+                                   const RSJsonHandle json_handle);
 
-            // ErrorCode ParseInputShapes(const JsonObject shapes_obj, std::map<std::string, Dims *> &input_shapes);
-            ErrorCode ParseInputShapes(const JsonHandle json_handle);
+            // ErrorCode ParseInputShapes(const JsonObject shapes_obj, std::map<std::string, Dims *>
+            // &input_shapes);
+            ErrorCode ParseInputShapes(const RSJsonHandle json_handle);
             // 通过json文件的内容读取
 
             void ClearBlobArray();

@@ -10,8 +10,7 @@ namespace rayshape
     namespace openvino
     {
 
-        class OpenvinoBlobConverter
-        {
+        class OpenvinoBlobConverter {
         public:
             /**
              *    @brief InferenceEngine::Blob::Ptr 转换为 自有Blob
@@ -21,7 +20,9 @@ namespace rayshape
              *     @param[out] dst  Blob**
              *     @return ErrorCode
              */
-            static ErrorCode CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src, const char *blob_name, bool alloc, bool gpu_blob = false);
+            static ErrorCode CreateOrUpdateBlob(Blob **dst, const ov::Tensor &src,
+                                                const char *blob_name, bool alloc,
+                                                bool gpu_blob = false);
 
             /**
              *    @brief 自有Blob 转换为 InferenceEngine::Blob::Ptr
@@ -33,7 +34,7 @@ namespace rayshape
             static std::shared_ptr<ov::Tensor> ConvertFromBlob(ErrorCode &status, const Blob *src);
         };
 
-    }
-} // namespace rayshape::openvino
+    } // namespace openvino
+} // namespace rayshape
 
 #endif

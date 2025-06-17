@@ -10,16 +10,17 @@ namespace rayshape
     namespace mnn
     {
 
-        class MnnBlobConverter
-        {
+        class MnnBlobConverter {
         public:
-            static ErrorCode CreateOrUpdateBlob(Blob **dst, const MNN::Tensor &src, const char *blob_name, bool alloc, bool is_gpu_blob);
+            static ErrorCode CreateOrUpdateBlob(Blob **dst, const MNN::Tensor &src,
+                                                const char *blob_name, bool alloc,
+                                                bool is_gpu_blob);
 
             static ErrorCode CopyToBlob(MagicXEBlob *src, MNN::Tensor &dst, DataFormat format);
 
             static MNN::Tensor *ConvertFromBlob(ErrorCode &status, const Blob *src);
         }
-    }
-}
+    } // namespace mnn
+} // namespace rayshape
 
 #endif

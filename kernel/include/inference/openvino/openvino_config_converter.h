@@ -8,13 +8,12 @@ namespace rayshape
 {
     namespace openvino
     {
-
-        class OpenVINOConfigConverter
-        {
+        class OpenVINOConfigConverter {
         public: // Fp16 ,uint8 ,fp32
             static DataType ConvertToDataType(const ov::element::Type &precision);
 
-            static ErrorCode ConvertFromDataType(ov::element::Type &precision, const DataType dataType);
+            static ErrorCode ConvertFromDataType(ov::element::Type &precision,
+                                                 const DataType dataType);
 
             static ErrorCode ConvertFromDims(ov::Shape &dst, const Dims &src);
 
@@ -26,8 +25,7 @@ namespace rayshape
             static DataFormat ConvertToDataFormat(const std::string &src);
             static ErrorCode ConvertFromDataFormat(ov::Layout &dst, const DataFormat src);
         };
-
-    }
-} // namespace rayshape::openvino
+    } // namespace openvino
+} // namespace rayshape
 
 #endif
