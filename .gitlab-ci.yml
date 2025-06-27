@@ -1,0 +1,45 @@
+stages:
+  - clang-format-check
+  - clang-tidy-check
+  - build  #跨平台构建
+  - test   #单元测试gtest
+  - package #打包
+  - deploy  #
+
+variables:
+  # 全局变量定义
+  BUILD_DIR: "build"
+  ARTIFACT_NAME: "app-$CI_COMMIT_SHORT_SHA"
+
+
+name: Clang Checks
+
+on: [pull_request]
+
+jobs:
+  clang-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: sudo apt-get install -y clang-format clang-tidy
+
+    - name: Generate compile_commands.json
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+
+    - name: Run clang-format check
+      run: |
+        python scripts/clang_format_check.py .
+
+    - name: Run clang-tidy check
+      run: |
+        python scripts/clang_tidy_check.py .
+  
+
+

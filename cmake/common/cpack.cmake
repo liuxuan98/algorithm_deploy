@@ -18,7 +18,7 @@ set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION
 #         ${ROOT_PATH}/.vscode        
 # )
 
-set(CPACK_PACKAGE_NAME "${MY_PROJECT_NAME}")   # 顶层的项目命名 CMAKE_PROJECT_NAME
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")   # 顶层的项目命名 CMAKE_PROJECT_NAME
 set(CPACK_GENERATOR  "TGZ")          # 指定打包的类型是 tar.gz   (RS_Deployment_0.3.0.0.tar.gz) 
 # 可以选择的打包类型 7Z(.7z)  7Zzip(.7z) TBZ2(tar.bz2) TGZ(.tar.gz) TXZ(.tar.xz) TZ(.tar.Z) ZIP(.zip)
 set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION})  

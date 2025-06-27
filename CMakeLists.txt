@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(MY_PROJECT_NAME "RS_Deployment")
-project(${MY_PROJECT_NAME})
-message("define name by self: ${MY_PROJECT_NAME}")
+set(PROJECT_NAME "RS_Deployment")
+project(${PROJECT_NAME})
+message("define name by self: ${PROJECT_NAME}")
 
 # project version
 set(RS_MAJOR_VERSION 0)
@@ -41,7 +41,7 @@ option(ENABLE_KERNEL "Enable Complie kernel" ON)  ## 编译kernel 部分总开�
 
 option(ENABLE_SAMPLE "Enable Compilie Sample" ON)
 
-option(ENABLE_TEST "Enable Complie Test" ON) 
+option(ENABLE_TEST "Enable Complie Test" OFF) 
 
 # # set 3rd party install
 option(ENABLE_3RD_OPENVINO "Enable 3rd Party" ON)

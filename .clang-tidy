@@ -1,0 +1,2 @@
+Checks: '-*,!clang-diagnostic-error,modernize-*,cppcoreguidelines-*,clang-analyzer-*'
+# 禁用所有检查 modernize-* # 开启所有现代化建议 readability-* # 开启可读性检查 performance-* # 开启性能优化检查 cppcoreguidelines-* # 开启核心准则检查 clang-analyzer-* # 启用 Clang 分析器检查 bugprone-* # 启用潜在 bug 检查 WarningsAsErrors: '*' # 将所有警告视为错误 HeaderFilterRegex: 'src/.*' # 只检查 src 目录下的文件 AnalyzeTemporaryDtors: true # 检查临时对象析构问题
