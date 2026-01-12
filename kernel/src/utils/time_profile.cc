@@ -39,7 +39,8 @@ namespace rayshape
                 name_procedure_(name_procedure), flag_(flag){};
             ProcedureTimePoint(std::string name_device, std::string name_procedure,
                                ProcedureFlag flag) :
-                name_device_(name_device), name_procedure_(name_procedure), flag_(flag){};
+                name_device_(name_device),
+                name_procedure_(name_procedure), flag_(flag){};
         };
 
         struct ProcedureElapsed {
@@ -52,8 +53,9 @@ namespace rayshape
 
             ProcedureElapsed(std::string name_device, std::string name_procedure, int level,
                              int count, int order, float sum_elapsed) :
-                name_device_(name_device), name_procedure_(name_procedure), level_(level),
-                count_(count), order_(order), sum_elapsed_(sum_elapsed){};
+                name_device_(name_device),
+                name_procedure_(name_procedure), level_(level), count_(count), order_(order),
+                sum_elapsed_(sum_elapsed){};
 
             friend bool operator<(ProcedureElapsed &lhs, ProcedureElapsed &rhs);
         };
@@ -206,9 +208,8 @@ namespace rayshape
             }
         }
 
-        void
-        TimeProfile::Write2TimeLogCSV(std::string name_file,
-                                      std::vector<std::shared_ptr<ProcedureElapsed>> &p_e_vec) {
+        void TimeProfile::Write2TimeLogCSV(
+            std::string name_file, std::vector<std::shared_ptr<ProcedureElapsed>> &p_e_vec) {
             time_t timep;
             time(&timep);
             char dairy[200];
@@ -226,16 +227,25 @@ namespace rayshape
                 outfile.precision(6);
 
                 // background
-                outfile << "compiler" << "," << name_compiler_.c_str() << std::endl;
-                outfile << "os" << "," << name_os_.c_str() << std::endl;
-                outfile << "host" << "," << name_host_.c_str() << std::endl;
-                outfile << "remain memory size" << "," << remain_memory_size_ << "byte"
-                        << std::endl;
-                outfile << std::endl;
+                outfile << "compiler"
+                        << "," << name_compiler_.c_str() << std::endl;
+                outfile << "os"
+                        << "," << name_os_.c_str() << std::endl;
+                outfile << "host"
+                        << "," << name_host_.c_str() << std::endl;
+                outfile << "remain memory size"
+                        << "," << remain_memory_size_ << "byte" << std::endl;
 
                 // elapsed
-                outfile << "procedure name" << "," << "avg elapsed (ms)" << ","
-                        << "sum elapsed (ms)" << "," << "count" << "," << "device" << std::endl;
+                outfile << "procedure name"
+                        << ","
+                        << "avg elapsed (ms)"
+                        << ","
+                        << "sum elapsed (ms)"
+                        << ","
+                        << "count"
+                        << ","
+                        << "device" << std::endl;
                 for (auto ite : p_e_vec) {
                     std::string full_procedure = "#";
                     for (int i = 1; i < ite->level_; ++i) {
@@ -347,7 +357,7 @@ namespace rayshape
             return time_profile->DownloadTimeProfile(name_file);
         }
 
-#endif
+#endif // RS_ENABLE_TIME_PROFILE
 
     } // namespace utils
 } // namespace rayshape

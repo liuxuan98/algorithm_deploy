@@ -6,7 +6,7 @@ namespace rayshape
     {
         // Factory registration
         AbstractDevice::AbstractDevice(DeviceType device_type) : device_type_(device_type) {}
-        AbstractDevice::~AbstractDevice() {}
+        AbstractDevice::~AbstractDevice() = default;
         DeviceType AbstractDevice::GetDeviceType() {
             return device_type_;
         }
@@ -28,5 +28,9 @@ namespace rayshape
             return *device_map;
         }
 
+        bool IsHostDeviceType(DeviceType device_type) {
+            return (device_type == DeviceType::CPU || device_type == DeviceType::X86
+                    || device_type == DeviceType::ARM);
+        }
     } // namespace device
 } // namespace rayshape

@@ -1,5 +1,5 @@
-#ifndef _OPENVINO_NETWORK_H_
-#define _OPENVINO_NETWORK_H_
+#ifndef OPENVINO_NETWORK_H
+#define OPENVINO_NETWORK_H
 
 #include "inference/inference.h"
 #include "openvino_include.h"
@@ -14,8 +14,6 @@ namespace rayshape
     namespace inference
     {
 
-        // std::string xml = ""; // json_file
-
         class OpenVinoNetWork: public Inference {
         public:
             OpenVinoNetWork(InferenceType type);
@@ -23,8 +21,6 @@ namespace rayshape
 
             ErrorCode Init(const Model *model, const CustomRuntime *runtime) override;
 
-            ErrorCode Init(const std::string &xml_path,
-                           const std::string &bin_path) override; // 重载的init 函数
             void DeInit() override;
 
             ErrorCode Reshape(const char **name_arr, const Dims *dims_arr,
@@ -42,8 +38,11 @@ namespace rayshape
 
             ErrorCode InitWithXml(const std::string &xml_path, const std::string &bin_path);
 
-            ErrorCode InitWithJson(Model model, const CustomRuntime *runtime,
-                                   const RSJsonHandle json_handle);
+            ErrorCode InitWithMemoryContent(const std::string &xml_content,
+                                            const std::string &bin_content);
+
+            // ErrorCode InitWithJson(const Model* model, const CustomRuntime *runtime,
+            //                        const RSJsonHandle json_handle);
 
             // ErrorCode ParseInputShapes(const JsonObject shapes_obj, std::map<std::string, Dims *>
             // &input_shapes);
@@ -58,7 +57,7 @@ namespace rayshape
 
         private:
             // static std::mutex g_mutex;
-            DeviceType device_type_ = DEVICE_TYPE_NONE;
+            DeviceType device_type_ = DeviceType::NONE;
             int num_threads_ = 4;
 
             // std::string model_bin_content_;
@@ -81,4 +80,4 @@ namespace rayshape
     } // namespace inference
 } // namespace rayshape
 
-#endif
+#endif // OPENVINO_NETWORK_H

@@ -10,13 +10,13 @@
  * @version 1.0.0
  */
 
-#ifndef _INFERENCE_H_
-#define _INFERENCE_H_
+#ifndef INFERENCE_H
+#define INFERENCE_H
 
 #include "base/common.h"
 #include "base/error.h"
 #include "memory_manager/blob.h"
-#include "utils/model.h"
+#include "model/model.h"
 
 namespace rayshape
 {
@@ -47,13 +47,6 @@ namespace rayshape
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
             virtual ErrorCode Init(const Model *model, const CustomRuntime *runtime) = 0;
-
-            /**
-             * @brief Inference Init for openvino test
-             * @details //重载一个独特的init接口给openvino网络使用
-             * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
-             */
-            virtual ErrorCode Init(const std::string &xml_path, const std::string &bin_path) = 0;
 
             /**
              * @brief Inference resource free
@@ -133,10 +126,7 @@ namespace rayshape
          * @tparam T
          */
         template <typename T> class TypeInferenceCreator: public InferenceCreator {
-            // virtual Inference *CreateInference(base::InferenceType type) {
-            //   return new T(type);
-            // }
-            virtual std::shared_ptr<Inference> CreateInference(InferenceType type) {
+            std::shared_ptr<Inference> CreateInference(InferenceType type) override {
                 return std::make_shared<T>(type);
             }
         };
@@ -171,4 +161,4 @@ namespace rayshape
     } // namespace inference
 } // namespace rayshape
 
-#endif
+#endif // INFERENCE_H

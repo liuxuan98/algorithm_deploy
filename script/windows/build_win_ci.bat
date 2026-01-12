@@ -44,9 +44,11 @@ cmake -G "Visual Studio 16 2019" -A %ARCH% ^
     -DENABLE_BUILD_SHARED=ON ^
     -DENABLE_SYMBOL_HIDE=OFF ^
     -DENABLE_COVERAGE=OFF ^
+    -DENABLE_STATIC_RUNTIME=ON ^
     -DENABLE_GLIBCXX_USE_CXX14_ABI=ON ^
     -DENABLE_TIME_PROFILER=OFF ^
     -DENABLE_RAPIDJSON=ON ^
+    -DENABLE_CEREAL=ON ^
     -DENABLE_OPENVINO_INFERENCE=ON ^
     -DENABLE_TEST=ON ..
 
@@ -57,7 +59,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM 构建项目 (可选: --target 指定具体目标)
 echo Building project with configuration: %BUILD_TYPE%...
-cmake --build . --config %BUILD_TYPE%
+cmake --build . --target INSTALL --config %BUILD_TYPE%
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Build failed. Please check the output for details.

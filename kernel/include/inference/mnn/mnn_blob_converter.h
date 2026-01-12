@@ -9,17 +9,36 @@ namespace rayshape
 {
     namespace mnn
     {
-
-        class MnnBlobConverter {
+        class MNNBlobConverter {
         public:
-            static ErrorCode CreateOrUpdateBlob(Blob **dst, const MNN::Tensor &src,
+            /**
+             * @brief Create or update RayShape Blob from MNN Tensor
+             *
+             * Shallow copy, src tensor lifetime must be longer than dst blob
+             * Supports CPU, ARM devices
+             *
+             * @param[out] dst     Target Blob pointer
+             * @param[in]  src     Source MNN Tensor
+             * @param[in]  blob_name Blob name
+             * @param[in]  alloc   Whether to allocate new memory
+             * @param[in]  gpu_blob Whether this is a GPU blob
+             * @return ErrorCode
+             */
+            static ErrorCode CreateOrUpdateBlob(Blob **dst, const MNN::Tensor *src,
                                                 const char *blob_name, bool alloc,
-                                                bool is_gpu_blob);
+                                                bool gpu_blob = false);
 
-            static ErrorCode CopyToBlob(MagicXEBlob *src, MNN::Tensor &dst, DataFormat format);
-
-            static MNN::Tensor *ConvertFromBlob(ErrorCode &status, const Blob *src);
-        }
+            /**
+             * @brief Convert RayShape Blob to MNN Tensor
+             *
+             * Shallow copy, src blob lifetime must be longer than dst tensor
+             *
+             * @param[out] status  Error code output
+             * @param[in]  src     Source RayShape Blob
+             * @return std::shared_ptr<MNN::Tensor> Created MNN Tensor
+             */
+            static std::shared_ptr<MNN::Tensor> ConvertFromBlob(ErrorCode &status, const Blob *src);
+        };
     } // namespace mnn
 } // namespace rayshape
 

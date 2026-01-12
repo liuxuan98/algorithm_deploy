@@ -1,5 +1,20 @@
 # Prerequisites
 *.d
+#  Build files
+build/
+build_*/ 
+
+# large folder
+third_party/tensorrt/
+
+# vscode folder
+.vscode/ 
+# datasets folder
+assets/datasets
+# output folder
+output
+# tmp folder
+tmp
 
 # Compiled Object files
 *.slo
@@ -11,22 +26,14 @@
 *.gch
 *.pch
 
-# Compiled Dynamic libraries
-#*.so
-#*.dylib
-#*.dll
-
 # Fortran module files
 *.mod
 *.smod
-
-# Compiled Static libraries
-#*.lai
-#*.la
-#*.a
-#*.lib
 
 # Executables
 *.exe
 *.out
 *.app
+
+# log files
+*log

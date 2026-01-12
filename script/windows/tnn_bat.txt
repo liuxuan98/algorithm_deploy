@@ -1,0 +1,36 @@
+set ROOT_DIR=%~dp0..\..
+还需要一个Release 参数 
+@echo off
+echo %ROOT_DIR%
+echo %1
+
+if "%2" == "" (
+    goto init_fold
+) else (
+    goto init_env
+)
+
+:init_env
+    if %1 == x86 (
+        echo "build x86"
+        call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars32.bat"
+    ) else (
+        echo "build x64"
+        call "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat"
+    )
+    goto init_fold
+
+:init_fold
+    cd  %ROOT_DIR%
+    mkdir build_win
+    cd build_win
+
+cmake %ROOT_DIR% -G "Visual Studio 16 2019" ^
+-DCMAKE_BUILD_TYPE=Release ^
+-DCMAKE_SYSTEM_NAME=Windows ^
+-DRS_DEPLOY_CPU_ENABLE=ON ^
+-DRS_DEPLOY_X86_ENABLE=ON ^
+-DRS_DEPLOY_TEST_ENABLE=ON ^
+-DINTTYPES_FORMAT=C99
+
+cmake --build . --config Release

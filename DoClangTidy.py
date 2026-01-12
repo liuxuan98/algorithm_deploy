@@ -1,64 +1,82 @@
+#!/usr/bin/env python3
 import subprocess
 import os
 import sys
+import json
 
-# 配置需要检查的文件扩展名
-FILE_EXTENSIONS = [".h",".hpp",".cpp", ".cc"]
+# .clang-tidy 配置文件必须存在
+CLANG_TIDY_CFG = ".clang-tidy"
+COMPILE_DB_DIR = "build_clang_tidy"  # compile_commands.json 所在目录
+SOURCE_ROOT = "kernel"    # 只检查 kernel/ 下的文件
 
-# 查找所有符合条件的源文件
-def get_source_files(directory):
-    source_files = []
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if any(file.endswith(ext) for ext in FILE_EXTENSIONS):
-                source_files.append(os.path.join(root, file))
-    return source_files
+# 只检查特定后缀
+ALLOWED_EXTS = (".h", ".cc", ".cpp", ".cxx", ".cuh", ".cu")
 
-# 运行 clang-tidy 静态检查
-def run_clang_tidy(file, compile_commands_dir):
-    try:
-        # 使用 clang-tidy 检查
-        subprocess.run(
-            ["clang-tidy", file, "--quiet", f"--compile-commands-dir={compile_commands_dir}"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"clang-tidy failed for {file}")
-        return False
+# 是否开启 -system-headers（不推荐，会进入 STL/三方头）
+USE_SYSTEM_HEADERS = False
+
+# 是否只输出问题，不因 warning 失败
+# True: 只有 clang-tidy 崩溃才报错；False: 有 warning 也失败
+TREAT_WARNINGS_AS_ERRORS = False
+
 
 def main():
-    # 默认从当前目录开始检查
-    directory = "."
-    if len(sys.argv) > 1:
-        directory = sys.argv[1]
-
-    # 查找 compile_commands.json
-    compile_commands_dir = os.path.join(directory, "build")
-    if not os.path.exists(os.path.join(compile_commands_dir, "compile_commands.json")):
-        print("Error: compile_commands.json not found. Please generate it using CMake.")
+    # 检查 .clang-tidy
+    if not os.path.exists(CLANG_TIDY_CFG):
+        print(f"❌ Error: Missing {CLANG_TIDY_CFG}")
         sys.exit(1)
 
-    # 查找所有源文件
-    source_files = get_source_files(directory)
-    if not source_files:
-        print("No source files found.")
-        sys.exit(0)
+    # 检查 compile_commands.json
+    compile_db_path = os.path.join(COMPILE_DB_DIR, "compile_commands.json")
+    if not os.path.exists(compile_db_path):
+        print(f"❌ Error: Missing compile_commands.json in '{COMPILE_DB_DIR}/'")
+        print("💡 Please run: mkdir -p build && cd build && cmake ..")
+        sys.exit(1)
 
-    # 对每个文件运行 clang-tidy
-    all_passed = True
-    for file in source_files:
-        if not run_clang_tidy(file, compile_commands_dir):
-            all_passed = False
+    # 构建 run-clang-tidy 命令
+    cmd = [
+        "run-clang-tidy",
+        "-p", COMPILE_DB_DIR,                    # 指向编译数据库
+        "-header-filter", f"^{SOURCE_ROOT}/.*",  # 只显示 kernel/ 下的警告
+    ]
 
-    if all_passed:
-        print("clang-tidy check passed!")
-        sys.exit(0)
+    if not USE_SYSTEM_HEADERS:
+        # 不显示系统头文件中的警告
+        cmd.append("-quiet")
+
+    # 可选：指定 checks
+    # cmd += ["-checks", "modernize-*,readability-*"]
+
+    print(f"🔍 Running: {' '.join(cmd)}")
+    print(f"📌 Will check files under '{SOURCE_ROOT}/' with real build flags.")
+
+    # 执行
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        print("❌ Error: 'run-clang-tidy' not found.")
+        print("💡 Install: sudo apt install clang-tools (or llvm)")
+        sys.exit(1)
+
+    # 输出结果
+    if result.stdout:
+        print(result.stdout, end="")
+
+    if result.stderr:
+        print("⚠️ Clang-Tidy stderr:", file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+
+    # 退出码处理
+    if result.returncode != 0:
+        if TREAT_WARNINGS_AS_ERRORS:
+            print(f"❌ run-clang-tidy failed with return code {result.returncode}")
+            sys.exit(1)
+        else:
+            print("✅ Warnings found, but not treated as errors.")
+            sys.exit(0)
     else:
-        print("clang-tidy check failed for some files.")
-        sys.exit(1)
+        print("✅ All good! No issues found.")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

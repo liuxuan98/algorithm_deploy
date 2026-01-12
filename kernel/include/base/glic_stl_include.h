@@ -1,5 +1,5 @@
-#ifndef _GLIBC_STL_INCLUDE_H_
-#define _GLIBC_STL_INCLUDE_H_
+#ifndef GLIBC_STL_INCLUDE_H
+#define GLIBC_STL_INCLUDE_H
 
 /**
  * @brief glibc
@@ -9,6 +9,7 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -63,5 +64,6 @@
 #include <future>
 #include <mutex>
 #include <thread>
+#include <tuple>
 
-#endif //_GLIBC_STL_INCLUDE_H_
+#endif // GLIBC_STL_INCLUDE_H

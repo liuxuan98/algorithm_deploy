@@ -11,47 +11,47 @@ namespace rayshape
     Buffer::Buffer() {}
 
     Buffer::Buffer(size_t size, MemoryType mem_type) {
-        RSMemoryInfo mem_info{ mem_type, DATA_TYPE_UINT8, (unsigned int)size };
-        RSMemoryData mem_data{ 0, nullptr, nullptr };
+        RSMemoryInfo mem_info{mem_type, DataType::UINT8, (unsigned int)size};
+        RSMemoryData mem_data{0, nullptr, nullptr};
         if ((Malloc(mem_info, mem_data)) == RS_SUCCESS) {
-            Init(mem_info, mem_data.data_ptr, mem_data.data_id, false);
+            Init(mem_info, mem_data.data_ptr_, mem_data.data_id_, false);
         }
     }
 
     Buffer::Buffer(const RSMemoryInfo &mem_info) {
-        RSMemoryData mem_data{ 0, nullptr, nullptr };
+        RSMemoryData mem_data{0, nullptr, nullptr};
         if ((Malloc(mem_info, mem_data)) == RS_SUCCESS) {
-            Init(mem_info, mem_data.data_ptr, mem_data.data_id, false);
+            Init(mem_info, mem_data.data_ptr_, mem_data.data_id_, false);
         }
     }
 
     Buffer::Buffer(void *data, size_t size, MemoryType mem_type) {
-        RSMemoryInfo mem_info{ mem_type, DATA_TYPE_UINT8, (unsigned int)size };
-        RSMemoryData mem_data{ 0, data, nullptr };
-        Init(mem_info, mem_data.data_ptr, mem_data.data_id, true);
+        RSMemoryInfo mem_info{mem_type, DataType::UINT8, (unsigned int)size};
+        RSMemoryData mem_data{0, data, nullptr};
+        Init(mem_info, mem_data.data_ptr_, mem_data.data_id_, true);
     }
 
     Buffer::Buffer(void *data, const RSMemoryInfo &mem_info) {
-        RSMemoryData mem_data{ 0, data, nullptr };
-        Init(mem_info, mem_data.data_ptr, mem_data.data_id, true);
+        RSMemoryData mem_data{0, data, nullptr};
+        Init(mem_info, mem_data.data_ptr_, mem_data.data_id_, true);
     }
 
     Buffer::Buffer(unsigned int id, const RSMemoryInfo &mem_info) {
-        RSMemoryData mem_data{ id, nullptr, nullptr };
+        RSMemoryData mem_data{id, nullptr, nullptr};
         if ((Malloc(mem_info, mem_data)) == RS_SUCCESS) {
-            Init(mem_info, mem_data.data_ptr, mem_data.data_id, false);
+            Init(mem_info, mem_data.data_ptr_, mem_data.data_id_, false);
         }
     }
 
     Buffer::~Buffer() {
         if (!is_external_) {
-            if (mem_.mem_data.data_ptr) {
-                AbstractDevice *device = (AbstractDevice *)mem_.mem_data.context;
+            if (mem_.mem_data_.data_ptr_) {
+                AbstractDevice *device = (AbstractDevice *)mem_.mem_data_.context_;
                 /*if (device == nullptr) {
                    device = GetDevice();
                 }*/
-                device->Free(mem_.mem_data.data_ptr);
-                mem_.mem_data.data_ptr = nullptr;
+                device->Free(mem_.mem_data_.data_ptr_);
+                mem_.mem_data_.data_ptr_ = nullptr;
             }
         }
     }
@@ -59,8 +59,8 @@ namespace rayshape
     ErrorCode Buffer::Malloc(const RSMemoryInfo &mem_info, RSMemoryData &mem_data) {
         ErrorCode ret = RS_SUCCESS;
 
-        DeviceType device_type = DEVICE_TYPE_NONE;
-        ret = ConvertMemoryTypeToDevice(mem_info.men_type, device_type);
+        DeviceType device_type = DeviceType::NONE;
+        ret = ConvertMemoryTypeToDevice(mem_info.mem_type_, device_type);
         if (ret != RS_SUCCESS) {
             RS_LOGE("ConvertMemoryTypeToDevice failed!\n");
             return ret;
@@ -73,7 +73,7 @@ namespace rayshape
 
         // device mem alloc
         // byte size calculate
-        size_t byte_size = mem_info.size * GetBytesSize(mem_info.data_type);
+        size_t byte_size = mem_info.size_ * GetBytesSize(mem_info.data_type_);
         if (byte_size <= 0) {
             RS_LOGE("can not alloc:%zu size memory.\n", byte_size);
             return RS_INVALID_PARAM_VALUE;
@@ -90,94 +90,109 @@ namespace rayshape
         }
 
         // full in data and return.
-        mem_data.data_id = 0;              // default is zero
-        mem_data.data_ptr = data_ptr;      // data pointer
-        mem_data.context = (void *)device; // device_
+        mem_data.data_id_ = 0;              // default is zero
+        mem_data.data_ptr_ = data_ptr;      // data pointer
+        mem_data.context_ = (void *)device; // device_
+        mem_.mem_data_.context_ = mem_data.context_;
 
         return ret;
     }
 
     void Buffer::Init(const RSMemoryInfo &mem_info, void *data, unsigned int data_id,
                       bool external) {
-        mem_.mem_info = mem_info;
+        mem_.mem_info_ = mem_info;
 
-        mem_.mem_data.data_ptr = data;
-        mem_.mem_data.data_id = data_id;
+        mem_.mem_data_.data_ptr_ = data;
+        mem_.mem_data_.data_id_ = data_id;
         is_external_ = external;
     }
 
     MemoryType Buffer::GetMemoryType() const {
-        return mem_.mem_info.men_type;
+        return mem_.mem_info_.mem_type_;
     }
 
     RSMemoryInfo Buffer::GetMemoryInfo() const {
-        return mem_.mem_info;
+        return mem_.mem_info_;
     }
 
     void *Buffer::GetDataPtr() const {
-        if (mem_.mem_data.data_ptr == nullptr) {
+        if (mem_.mem_data_.data_ptr_ == nullptr) {
             return nullptr;
         } else {
-            return mem_.mem_data.data_ptr;
+            return mem_.mem_data_.data_ptr_;
         }
     }
 
     unsigned int Buffer::GetDataId() const {
-        return mem_.mem_data.data_id;
+        return mem_.mem_data_.data_id_;
     }
 
     size_t Buffer::GetDataSize() const {
-        return mem_.mem_info.size;
+        return mem_.mem_info_.size_;
     }
 
     bool Buffer::GetExternalFlag() const {
         return is_external_;
     }
 
-    // 深拷贝src to dst.only support same device copy
     ErrorCode Buffer::DeepCopy(Buffer &dst) {
         ErrorCode ret = RS_SUCCESS;
 
-        // check null pointer
-        if (&dst == nullptr) {
-            RS_LOGE("Invalid destination buffer object is null.\n");
+        if (this == &dst) {
+            RS_LOGI("src buffer obj equal dst buffer obj\n");
+            return RS_SUCCESS;
+        }
+        // get src information and dst information.
+        RSMemoryInfo src_info = this->GetMemoryInfo();
+        RSMemoryInfo dst_info = dst.GetMemoryInfo();
+        // allow different memory type.
+        if (src_info.data_type_ != dst_info.data_type_ || src_info.size_ != dst_info.size_) {
+            RS_LOGI("data_type or mem_size not equal\n");
             return RS_INVALID_PARAM;
         }
 
-        // check
-        if (mem_.mem_info.men_type != dst.mem_.mem_info.men_type
-            || mem_.mem_info.data_type != dst.mem_.mem_info.data_type
-            || mem_.mem_info.size != dst.mem_.mem_info.size) {
-            return RS_INVALID_PARAM;
+        // if (is_external_ == true || dst.is_external_ == true) {
+        //     RS_LOGE("external alloc can not deep copy\n");
+        //     return RS_NOT_IMPLEMENT;
+        // }
+
+        // transfer memmory_type to device_type
+        DeviceType src_device_type = DeviceType::NONE;
+        ret = ConvertMemoryTypeToDevice(src_info.mem_type_, src_device_type);
+        if (ret != RS_SUCCESS) {
+            RS_LOGE("ConvertMemoryTypeToDevice failed!\n");
+            return ret;
+        }
+        AbstractDevice *src_device = GetDevice(src_device_type);
+
+        DeviceType dst_device_type = DeviceType::NONE;
+        ret = ConvertMemoryTypeToDevice(dst_info.mem_type_, dst_device_type);
+        if (ret != RS_SUCCESS) {
+            RS_LOGE("ConvertMemoryTypeToDevice failed!\n");
+            return ret;
+        }
+        AbstractDevice *dst_device = GetDevice(dst_device_type);
+        if (src_device == nullptr || dst_device == nullptr) {
+            RS_LOGE("GetDevice src or dst failed!\n");
+            return RS_DEVICE_NOT_SUPPORT;
         }
 
-        if (is_external_ == true || dst.is_external_ == true) {
-            RS_LOGE("external alloc can not deep copy");
+        if (src_info.mem_type_ == MemoryType::HOST && dst_info.mem_type_ == MemoryType::HOST) {
+            return src_device->Copy(this, &dst, nullptr);
+        } else if (src_info.mem_type_ == dst_info.mem_type_) {
+            return src_device->Copy(this, &dst, nullptr);
+        } else if (src_info.mem_type_ == MemoryType::HOST
+                   && dst_info.mem_type_ != MemoryType::HOST) {
+            return dst_device->CopyToDevice(this, &dst, nullptr);
+        } else if (src_info.mem_type_ != MemoryType::HOST
+                   && dst_info.mem_type_ == MemoryType::HOST) {
+            return src_device->CopyFromDevice(this, &dst, nullptr); // down
+        } else {
+            RS_LOGE("not support memory type type{%d->%d} for buffer deepcopy operation.\n",
+                    src_info.mem_type_, dst_info.mem_type_);
             return RS_NOT_IMPLEMENT;
         }
-
-        if (mem_.mem_data.data_ptr == nullptr || dst.mem_.mem_data.data_ptr == nullptr) {
-            RS_LOGE("src or dst data ptr is null\n");
-            return RS_INVALID_PARAM;
-        }
-
-        //  如果是同种设备类型，直接拷贝数据
-        size_t copy_size = dst.GetDataSize() * GetBytesSize(dst.mem_.mem_info.data_type);
-        if (mem_.mem_info.men_type == dst.GetMemoryType()) {
-            AbstractDevice *device = (AbstractDevice *)mem_.mem_data.context;
-            ret = device->Copy(mem_.mem_data.data_ptr, dst.mem_.mem_data.data_ptr,
-                               dst.GetDataSize(), nullptr);
-            if (ret != RS_SUCCESS) {
-                RS_LOGE(
-                    "Copy data from source device to destination device failed with error code: %d \n",
-                    ret);
-                return ret;
-            }
-        } else {
-            // todo
-        }
-
-        return RS_SUCCESS;
+        return ret;
     }
 
     // 外部使用智能指针可以实现管理
@@ -188,7 +203,7 @@ namespace rayshape
             return nullptr;
         }
 
-        // 创建临时对象
+        // creat tmp buffer
         Buffer *buffer = nullptr;
         buffer = new Buffer(size, mem_type);
         if (!buffer) {
@@ -200,8 +215,8 @@ namespace rayshape
     }
 
     Buffer *Buffer::Alloc(const RSMemoryInfo &mem_info) {
-        if (mem_info.size <= 0) {
-            RS_LOGE("Invalid buffer size: %d\n", mem_info.size);
+        if (mem_info.size_ <= 0) {
+            RS_LOGE("Invalid buffer size: %d\n", mem_info.size_);
             return nullptr;
         }
 
@@ -228,7 +243,7 @@ namespace rayshape
     }
 
     Buffer *Buffer::Create(void *data, const RSMemoryInfo &mem_info) {
-        if (data == nullptr || mem_info.size <= 0) {
+        if (data == nullptr || mem_info.size_ <= 0) {
             RS_LOGE("Invalid data or mem size <=0\n");
             return nullptr;
         }

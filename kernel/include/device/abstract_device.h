@@ -10,14 +10,17 @@
  * @version 1.0.0
  */
 
-#ifndef _ABSTRACT_DEVICE_H_
-#define _ABSTRACT_DEVICE_H_
+#ifndef ABSTRACT_DEVICE_H
+#define ABSTRACT_DEVICE_H
 
 #include "base/common.h"
 #include "base/error.h"
 #include "base/macros.h"
 #include "base/logger.h"
 #include "memory_manager/buffer.h"
+#include "utils/type_utils.h"
+
+using namespace rayshape::utils;
 
 namespace rayshape
 {
@@ -74,7 +77,8 @@ namespace rayshape
              * @param[in] size need copy memory size(byte)
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode Copy(void *src, void *dst, size_t size, void *command_queue) = 0;
+            virtual ErrorCode Copy(const void *src, void *dst, size_t size,
+                                   void *command_queue) = 0;
 
             /**
              * @brief memory copy to device for host to device
@@ -83,7 +87,7 @@ namespace rayshape
              * @param[in] size need copy memory size(byte)
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode CopyToDevice(void *src, void *dst, size_t size,
+            virtual ErrorCode CopyToDevice(const void *src, void *dst, size_t size,
                                            void *command_queue) = 0;
             /**
              * @brief memory copy from device for device to host
@@ -92,7 +96,7 @@ namespace rayshape
              * @param[in] size need copy memory size(byte)
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode CopyFromDevice(void *src, void *dst, size_t size,
+            virtual ErrorCode CopyFromDevice(const void *src, void *dst, size_t size,
                                              void *command_queue) = 0;
 
             /**
@@ -101,7 +105,7 @@ namespace rayshape
              * @param[in] dst dst Buffer pointer
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode Copy(Buffer *src, const Buffer *dst, void *command_queue) = 0;
+            virtual ErrorCode Copy(const Buffer *src, Buffer *dst, void *command_queue) = 0;
 
             /**
              * @brief memory copy by buffer for host to device
@@ -109,7 +113,7 @@ namespace rayshape
              * @param[in] dst dst dvice Buffer pointer
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode CopyToDevice(Buffer *src, const Buffer *dst, void *command_queue) = 0;
+            virtual ErrorCode CopyToDevice(const Buffer *src, Buffer *dst, void *command_queue) = 0;
 
             /**
              * @brief memory copy by buffer for device to host
@@ -117,7 +121,7 @@ namespace rayshape
              * @param[in] dst dst host Buffer pointer
              * @return ErrorCode RS_SUCCESS if copy success, otherwise error code
              */
-            virtual ErrorCode CopyFromDevice(Buffer *src, const Buffer *dst,
+            virtual ErrorCode CopyFromDevice(const Buffer *src, Buffer *dst,
                                              void *command_queue) = 0;
 
             /**
@@ -135,7 +139,7 @@ namespace rayshape
         std::map<DeviceType, std::shared_ptr<AbstractDevice>> &GetGlobalDeviceMap();
 
         // @brief Get Device Object Pointer By DeviceType
-        AbstractDevice *GetDevice(DeviceType type);
+        RS_PUBLIC AbstractDevice *GetDevice(DeviceType type);
 
         // @brief TypeDeviceRegister construct register device
         template <typename T> class TypeDeviceRegister {
@@ -148,7 +152,9 @@ namespace rayshape
             }
         };
 
+        bool IsHostDeviceType(DeviceType device_type);
+
     } // namespace device
 } // namespace rayshape
 
-#endif
+#endif // ABSTRACT_DEVICE_H

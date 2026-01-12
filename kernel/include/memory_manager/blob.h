@@ -1,3 +1,14 @@
+/**
+ * @file blob.h
+ * @brief 模型输入输出传输blob管道模块
+ * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ *
+ *
+ * @author Liuxuan
+ * @email liuxuan@rayshape.com
+ * @date 2025-05-16
+ * @version 1.0.0
+ */
 
 #ifndef _BLOB_H_
 #define _BLOB_H_
@@ -19,15 +30,18 @@ namespace rayshape
     } Dims;
 
     typedef struct RS_PUBLIC Blob {
-        DeviceType device_type; // device_type describes device type cpu, gpu,.........
+        DeviceType device_type = DeviceType::NONE;
+        // device_type describes device type cpu, gpu,.........
 
-        DataType data_type; // data_type describes data precision fp32,int8,..........
+        DataType data_type = DataType::NONE;
+        // data_type describes data precision fp32,int8,..........
 
-        DataFormat data_format; // data format describes data layout NCHW,NHWC,CHW,HWC,HW,.........
+        DataFormat data_format = DataFormat::AUTO;
+        // data format describes data layout NCHW,NHWC,CHW,HWC,HW,.........
 
-        Dims dims; // Dims describes data dims.
+        Dims dims = {}; // Dims describes data dims.
 
-        char name[MAX_BLOB_NAME + 1]; // blob name
+        char name[MAX_BLOB_NAME + 1] = {}; // blob name
 
         Buffer *buffer = nullptr; // buffer blob data buffer,share_ptr manage?
 

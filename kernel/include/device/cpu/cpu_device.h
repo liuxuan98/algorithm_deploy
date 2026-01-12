@@ -1,5 +1,5 @@
-#ifndef _CPU_DEVICE_H_
-#define _CPU_DEVICE_H_
+#ifndef CPU_DEVICE_H
+#define CPU_DEVICE_H
 
 #include "device/abstract_device.h"
 
@@ -17,31 +17,31 @@ namespace rayshape
         public:
             CpuDevice(DeviceType device_type);
 
-            virtual ~CpuDevice();
+            ~CpuDevice() override;
 
         public:
-            virtual ErrorCode Allocate(size_t size, void **ptr);
+            ErrorCode Allocate(size_t size, void **ptr) override;
 
-            virtual ErrorCode Free(void *ptr);
+            ErrorCode Free(void *ptr) override;
 
-            virtual ErrorCode Copy(void *src, void *dst, size_t size,
-                                   void *command_queue = nullptr);
+            ErrorCode Copy(const void *src, void *dst, size_t size,
+                           void *command_queue = nullptr) override;
 
-            virtual ErrorCode CopyToDevice(void *src, void *dst, size_t size,
-                                           void *command_queue = nullptr);
+            ErrorCode CopyToDevice(const void *src, void *dst, size_t size,
+                                   void *command_queue = nullptr) override;
 
-            virtual ErrorCode CopyFromDevice(void *src, void *dst, size_t size,
-                                             void *command_queue = nullptr);
+            ErrorCode CopyFromDevice(const void *src, void *dst, size_t size,
+                                     void *command_queue = nullptr) override;
 
-            virtual ErrorCode Copy(Buffer *dst, const Buffer *src, void *command_queue = nullptr);
+            ErrorCode Copy(const Buffer *src, Buffer *dst, void *command_queue = nullptr) override;
 
-            virtual ErrorCode CopyToDevice(Buffer *dst, const Buffer *src,
-                                           void *command_queue = nullptr);
+            ErrorCode CopyToDevice(const Buffer *src, Buffer *dst,
+                                   void *command_queue = nullptr) override;
 
-            virtual ErrorCode CopyFromDevice(Buffer *dst, const Buffer *src,
-                                             void *command_queue = nullptr);
+            ErrorCode CopyFromDevice(const Buffer *src, Buffer *dst,
+                                     void *command_queue = nullptr) override;
         };
     } // namespace device
 } // namespace rayshape
 
-#endif
+#endif // CPU_DEVICE_H

@@ -1,5 +1,3 @@
-# algorithm_deploy
-a algorithm deploy framework with attributes of cross platform、simple code、CI/CD by myself
+# RayShape_Deploy
 
-
-# 算法部署框架项目
+算法部署框架项目

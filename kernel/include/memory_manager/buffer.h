@@ -1,29 +1,39 @@
+/**
+ * @file buffer.h
+ * @brief buffer内存管理模块
+ * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ *
+ *
+ * @author Liuxuan
+ * @email liuxuan@rayshape.com
+ * @date 2025-05-16
+ * @version 1.0.0
+ */
 
-#ifndef _BUFFER_H_
-#define _BUFFER_H_
+#ifndef BUFFER_H
+#define BUFFER_H
 
 #include "base/common.h"
 #include "base/error.h"
-
 
 namespace rayshape
 {
 
     typedef struct RSMemoryInfo {
-        MemoryType men_type = MEM_TYPE_NONE;
-        DataType data_type = DATA_TYPE_NONE;
-        unsigned int size = 0;
+        MemoryType mem_type_ = MemoryType::NONE;
+        DataType data_type_ = DataType::NONE;
+        unsigned int size_ = 0;
     } RSMemoryInfo;
 
     typedef struct RSMemoryData {
-        unsigned int data_id;
-        void *data_ptr = nullptr;
-        void *context = nullptr;
+        unsigned int data_id_ = 0;
+        void *data_ptr_ = nullptr;
+        void *context_ = nullptr;
     } RSMemoryData;
 
     typedef struct RSMemory {
-        RSMemoryInfo mem_info;
-        RSMemoryData mem_data;
+        RSMemoryInfo mem_info_;
+        RSMemoryData mem_data_;
     } RSMemory;
 
     class RS_PUBLIC Buffer {
@@ -39,6 +49,12 @@ namespace rayshape
         Buffer(void *data, const RSMemoryInfo &mem_info);
 
         Buffer(unsigned int id, const RSMemoryInfo &mem_info);
+
+        Buffer(const Buffer &) = delete;
+        Buffer &operator=(const Buffer &) = delete;
+
+        Buffer(Buffer &&) = delete;
+        Buffer &operator=(Buffer &&) = delete;
 
         virtual ~Buffer();
 
@@ -73,13 +89,11 @@ namespace rayshape
 
         void Init(const RSMemoryInfo &mem_info, void *data, unsigned int data_id, bool external);
 
-        Buffer &operator=(const Buffer &buffer) = delete;
-
     private:
         // 设备对象
         // AbstractDevice *device_ = nullptr;
         // 内存结构体
-        RSMemory mem_{ { MEM_TYPE_NONE, DATA_TYPE_NONE, 0 }, { 0, nullptr, nullptr } };
+        RSMemory mem_;
         // 内外部内存flag
         bool is_external_ = false;
     };
@@ -88,4 +102,4 @@ namespace rayshape
 
 } // namespace rayshape
 
-#endif
+#endif // BUFFER_H

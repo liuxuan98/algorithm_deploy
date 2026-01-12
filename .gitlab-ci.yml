@@ -4,42 +4,121 @@ stages:
   - build  #跨平台构建
   - test   #单元测试gtest
   - package #打包
-  - deploy  #
+  #- deploy  #
 
 variables:
   # 全局变量定义
   BUILD_DIR: "build"
-  ARTIFACT_NAME: "app-$CI_COMMIT_SHORT_SHA"
+  #ARTIFACT_NAME: "app-$CI_COMMIT_SHORT_SHA"
+  GITLAB_SERVER_URL: "http://192.168.0.105"
+  GITLAB_PROJECT_ID: "663"  # Project ID
+  # Note: GITLAB_TOKEN needs to be set in GitLab CI/CD Settings
+  GIT_STRATEGY: clone
 
 
-name: Clang Checks
+clang_format_check:
+  stage: clang-format-check
+  tags:
+    - Linux_CI  #choose runner tag
+  script:
+    #- apt-get update && apt-get install -y clang-format # 默认已经存在clang-format
+    - python DoClangFormat.py
 
-on: [pull_request]
+clang_tidy_check:
+  stage: clang-tidy-check
+  dependencies:
+    - clang_format_check
+  tags:
+    - Linux_CI  #指定runner标签
+  script:
+    #- apt-get update && apt-get install -y clang-tidy # 默认已经存在clang-tidy
+    - mkdir -p build_clang_tidy && cd build_clang_tidy && cmake .. && cd ..
+    - python DoClangTidy.py
 
-jobs:
-  clang-checks:
-    runs-on: ubuntu-latest
+build_win:
+  stage: build
+  dependencies:
+    - clang_tidy_check
+  tags:
+    - Windows_GPU
+  script:
+    - cd script/windows/
+    - ./build_win_ci.bat
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Install dependencies
-      run: sudo apt-get install -y clang-format clang-tidy
-
-    - name: Generate compile_commands.json
-      run: |
-        mkdir build
-        cd build
-        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-
-    - name: Run clang-format check
-      run: |
-        python scripts/clang_format_check.py .
-
-    - name: Run clang-tidy check
-      run: |
-        python scripts/clang_tidy_check.py .
-  
+build_linux:
+  stage: build
+  dependencies:
+    - clang_tidy_check
+  tags:
+    - Linux_CI
+  script:
+    - cd script/linux/
+    - chmod +x build_linux_ci.sh
+    - ./build_linux_ci.sh
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
 
 
+test_win:
+  stage: test
+  dependencies:
+    - build_win
+  tags:
+    - Windows_GPU
+  script:
+    - cd build/target/Windows/bin/Release
+    - ./rayshape_test.exe
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
+
+test_linux:
+  stage: test
+  dependencies:
+    - build_linux
+  tags:
+    - Linux_CI
+  script:
+    - echo "test_linux"  # skip gtest in linux platform
+    #- cd build/target/Linux/bin/Release
+    #- ./rayshape_test
+
+
+package_win:
+  stage: package
+  dependencies:
+    - test_win
+  tags:
+    - Windows_GPU
+  script:
+    - echo "Packaging ..."
+    - cd build/
+    - cpack -C Release -G ZIP
+  artifacts:
+    paths:
+      - build/package/
+      - build/package/*.zip
+    expire_in: 1 day
+
+# deploy_win:
+#   stage: deploy
+#   tags:
+#     - Windows_GPU
+#   dependencies:
+#     - package_win
+#   release:
+#     tagName: "${CI_COMMIT_SHORT_SHA}"  # 或动态值如 $CI_COMMIT_TAG
+#     description: "Windows Build Package for v1.0.0"
+
+  #script:
+  #  - echo "Deploying ..."
+  #  - python scripts/deploy.py
+  # only:
+  #   - main

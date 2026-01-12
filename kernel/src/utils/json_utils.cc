@@ -96,6 +96,14 @@ namespace rayshape
             }
         }
 
+        bool RSJsonBoolGet(RSJsonObject bool_object, bool default_value) {
+            if (bool_object != nullptr && bool_object->IsBool()) {
+                return bool_object->GetBool();
+            } else {
+                return default_value;
+            }
+        }
+
         RSJsonObject RSJsonArrayAt(RSJsonObject arr_object, unsigned int index) {
             if (arr_object == nullptr || !arr_object->IsArray()) {
                 RS_LOGE("Invalid JSON array object.\n");

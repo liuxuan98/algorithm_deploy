@@ -5,10 +5,11 @@ using namespace rayshape;
 using namespace rayshape::inference;
 // 测试 CreateInference 是否能成功创建指定类型的实例
 TEST(InferenceFactoryTest, CreateValidType) {
-    InferenceType type = INFERENCE_TYPE_OPENVINO;
+    InferenceType type = InferenceType::OPENVINO;
     auto inference = CreateInference(type);
 
     EXPECT_NE(inference, nullptr) << "CreateInference should return a valid object for known type.";
+    EXPECT_EQ(inference->GetInferenceType(), type);
 }
 
 // 测试不支持的类型是否会返回 nullptr

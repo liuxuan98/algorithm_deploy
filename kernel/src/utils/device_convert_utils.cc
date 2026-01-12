@@ -6,27 +6,27 @@ namespace rayshape
     {
         ErrorCode ConvertDeviceTypeToMemory(const DeviceType &device_type, MemoryType &mem_type) {
             switch (device_type) {
-            case DEVICE_TYPE_CPU:
-            case DEVICE_TYPE_X86:
-            case DEVICE_TYPE_ARM:
-                mem_type = MEM_TYPE_HOST;
+            case DeviceType::CPU:
+            case DeviceType::X86:
+            case DeviceType::ARM:
+                mem_type = MemoryType::HOST;
                 break;
 
-            case DEVICE_TYPE_CUDA:
-                mem_type = MEM_TYPE_CUDA;
+            case DeviceType::CUDA:
+                mem_type = MemoryType::CUDA;
                 break;
 
-            case DEVICE_TYPE_OPENCL:
-                mem_type = MEM_TYPE_OPENCL;
+            case DeviceType::OPENCL:
+                mem_type = MemoryType::OPENCL;
                 break;
 
             // 可选：其他异构设备映射为最接近的内存类型
-            case DEVICE_TYPE_INTERL_NPU:
-            case DEVICE_TYPE_INTERL_GPU:
-                mem_type = MEM_TYPE_NONE; // 或者根据实际平台调整
+            case DeviceType::INTERL_NPU:
+            case DeviceType::INTERL_GPU:
+                mem_type = MemoryType::NONE; // 或者根据实际平台调整
                 break;
             default:
-                mem_type = MEM_TYPE_NONE; // 未知设备类型
+                mem_type = MemoryType::NONE; // 未知设备类型
                 break;
             }
 
@@ -35,22 +35,22 @@ namespace rayshape
 
         ErrorCode ConvertMemoryTypeToDevice(const MemoryType &mem_type, DeviceType &device_data) {
             switch (mem_type) {
-            case MEM_TYPE_NONE:
-                device_data = DEVICE_TYPE_NONE;
+            case MemoryType::NONE:
+                device_data = DeviceType::NONE;
                 break;
 
-            case MEM_TYPE_HOST:
-                device_data = DEVICE_TYPE_CPU;
+            case MemoryType::HOST:
+                device_data = DeviceType::CPU;
                 break;
 
-            case MEM_TYPE_CUDA:
-                device_data = DEVICE_TYPE_CUDA;
+            case MemoryType::CUDA:
+                device_data = DeviceType::CUDA;
                 break;
-            case MEM_TYPE_OPENCL:
-                device_data = DEVICE_TYPE_OPENCL;
+            case MemoryType::OPENCL:
+                device_data = DeviceType::OPENCL;
                 break;
             default:
-                device_data = DEVICE_TYPE_NONE;
+                device_data = DeviceType::NONE;
                 break;
             }
 

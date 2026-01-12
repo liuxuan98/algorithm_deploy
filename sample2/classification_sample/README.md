@@ -1,0 +1,2 @@
+## debug param
+C:\Users\RayShape\Downloads\deploy_test_data\test_data D:\Program\rayshape_deploy\model\breast_thyroid\openvino\checkpoint-best.xml D:\Program\rayshape_deploy\model\breast_thyroid\openvino\checkpoint-best.bin

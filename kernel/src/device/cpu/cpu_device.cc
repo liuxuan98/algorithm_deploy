@@ -4,11 +4,11 @@ namespace rayshape
 {
     namespace device
     {
-        TypeDeviceRegister<CpuDevice> g_cpu_device_register(DEVICE_TYPE_CPU);
+        TypeDeviceRegister<CpuDevice> g_cpu_device_register(DeviceType::CPU);
         // 已有主体的报错是在声明时候就定义了
         CpuDevice::CpuDevice(DeviceType device_type) : AbstractDevice(device_type) {}
 
-        CpuDevice::~CpuDevice() {}
+        CpuDevice::~CpuDevice() = default;
 
         ErrorCode CpuDevice::Allocate(size_t size, void **handle) {
             if (handle == nullptr) {
@@ -17,15 +17,15 @@ namespace rayshape
             }
 
             if (size > 0) {
-                *handle = malloc(size);
-                if (*handle == nullptr) {
-                    RS_LOGE("CPU malloc failed!\n");
+                void *mem_ptr = malloc(size);
+                if (mem_ptr == nullptr) {
+                    RS_LOGE("Cpu malloc failed!\n");
                     return RS_OUTOFMEMORY;
                 }
-                memset(*handle, 0, size);
+                memset(mem_ptr, 0, size);
+                *handle = mem_ptr;
             } else {
-                // log
-                RS_LOGE("CPU Allocate size:%zu is less than zore.\n", size);
+                RS_LOGE("Cpu Allocate size:%zu is less than one byte.\n", size);
                 return RS_INVALID_PARAM;
             }
             return RS_SUCCESS;
@@ -33,8 +33,8 @@ namespace rayshape
 
         ErrorCode CpuDevice::Free(void *handle) {
             if (handle == nullptr) {
-                RS_LOGI("CPU free handle ptr is null:%p\n", handle);
-                return RS_SUCCESS;
+                RS_LOGI("Cpu free handle ptr is null:%p\n", handle);
+                return RS_INVALID_PARAM;
             }
 
             free(handle);
@@ -42,7 +42,7 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        ErrorCode CpuDevice::Copy(void *src, void *dst, size_t size, void *command_queue) {
+        ErrorCode CpuDevice::Copy(const void *src, void *dst, size_t size, void *command_queue) {
             if (src == nullptr || dst == nullptr || size == 0) {
                 RS_LOGE("Invalid parameters: src=%p, dst=%p, size=%zu", src, dst, size);
                 return RS_INVALID_PARAM;
@@ -53,26 +53,36 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        ErrorCode CpuDevice::CopyToDevice(void *src, void *dst, size_t size, void *command_queue) {
+        ErrorCode CpuDevice::CopyToDevice(const void *src, void *dst, size_t size,
+                                          void *command_queue) {
             RS_LOGI("CPU CopyToDevice is not implement\n");
             return RS_NOT_IMPLEMENT;
         }
 
-        ErrorCode CpuDevice::CopyFromDevice(void *src, void *dst, size_t size,
+        ErrorCode CpuDevice::CopyFromDevice(const void *src, void *dst, size_t size,
                                             void *command_queue) {
             RS_LOGI("CPU CopyFromDevice is not implement\n");
             return RS_NOT_IMPLEMENT;
         }
 
-        ErrorCode CpuDevice::Copy(Buffer *dst, const Buffer *src, void *command_queue) {
+        ErrorCode CpuDevice::Copy(const Buffer *src, Buffer *dst, void *command_queue) {
             if (dst == nullptr || src == nullptr) {
                 RS_LOGE("Invalid parameters: dst=%p, src=%p\n", dst, src);
+                return RS_INVALID_PARAM;
+            }
+            RSMemoryInfo dst_mem_info = dst->GetMemoryInfo();
+            RSMemoryInfo src_mem_info = src->GetMemoryInfo();
+            if (dst_mem_info.data_type_ != src_mem_info.data_type_
+                || dst_mem_info.mem_type_ != src_mem_info.mem_type_) {
+                RS_LOGE("Buffer copy not support cross data_type:(%d,%d) or men_type:(%d,%d) \n",
+                        dst_mem_info.data_type_, src_mem_info.data_type_, dst_mem_info.mem_type_,
+                        src_mem_info.mem_type_);
                 return RS_INVALID_PARAM;
             }
 
             size_t dst_size = dst->GetDataSize();
             size_t src_size = src->GetDataSize();
-            size_t size = std::min(dst_size, src_size);
+            size_t size = std::min(dst_size, src_size) * GetBytesSize(dst_mem_info.data_type_);
 
             if (dst->GetDataPtr() == nullptr || src->GetDataPtr() == nullptr) {
                 RS_LOGE("dst pointer or src pointer is null\n");
@@ -84,15 +94,14 @@ namespace rayshape
             return RS_SUCCESS;
         }
 
-        ErrorCode CpuDevice::CopyToDevice(Buffer *dst, const Buffer *src, void *command_queue) {
+        ErrorCode CpuDevice::CopyToDevice(const Buffer *src, Buffer *dst, void *command_queue) {
             RS_LOGI("CPU CopyToDevice is not implement\n");
             return RS_NOT_IMPLEMENT;
         }
 
-        ErrorCode CpuDevice::CopyFromDevice(Buffer *dst, const Buffer *src, void *command_queue) {
+        ErrorCode CpuDevice::CopyFromDevice(const Buffer *src, Buffer *dst, void *command_queue) {
             RS_LOGI("CPU CopyFromDevice is not implement\n");
             return RS_NOT_IMPLEMENT;
         }
-
     } // namespace device
 } // namespace rayshape

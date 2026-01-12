@@ -1,6 +1,6 @@
 
 #ifndef _ABSTRACT_PARAM_H_
-#define _ABSTRACT_PARAM_H_
+#define ABSTRACT_PARAM_H
 
 namespace rayshape
 {

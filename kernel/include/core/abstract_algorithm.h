@@ -1,5 +1,5 @@
 #ifndef _ABSTRACT_ALGORITHM_H_
-#define _ABSTRACT_ALGORITHM_H_
+#define ABSTRACT_ALGORITHM_H
 
 namespace rayshape
 {

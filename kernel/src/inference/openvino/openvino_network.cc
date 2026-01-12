@@ -2,18 +2,26 @@
 
 #include "inference/openvino/openvino_blob_converter.h"
 #include "inference/openvino/openvino_config_converter.h"
+#include "model/openvino/openvino_model.h"
 #include "utils/blob_utils.h"
 #include "base/logger.h"
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
+#include <memory>
+#include <cstring>
+#include <exception>
 
-using namespace rayshape::openvino;
 using namespace rayshape::utils;
+using namespace rayshape::inference::openvino;
 
 namespace rayshape
 {
     namespace inference
     {
-        TypeInferenceRegister<TypeInferenceCreator<OpenVinoNetWork>>
-            g_openvino_inference_register(INFERENCE_TYPE_OPENVINO);
+        TypeInferenceRegister<TypeInferenceCreator<OpenVinoNetWork>> g_openvino_inference_register(
+            InferenceType::OPENVINO);
 
         OpenVinoNetWork::OpenVinoNetWork(InferenceType type) : Inference(type) {}
 
@@ -22,99 +30,57 @@ namespace rayshape
         }
 
         ErrorCode OpenVinoNetWork::Init(const Model *model, const CustomRuntime *runtime) {
-            return RS_SUCCESS;
-        }
-
-        ErrorCode OpenVinoNetWork::Init(const std::string &xml_path, const std::string &bin_path) {
-            // 应该是有一个json解析的过程
-            // 这里暂时先用xml和对应bin进行初始化后续更改变动
-            RS_LOGD("OpenVinoNetWork Init!\n");
+            RS_LOGD("OpenVinoNetWork Init with Model!\n");
 
             ErrorCode ret = RS_SUCCESS;
 
+            if (model == nullptr || runtime == nullptr) {
+                RS_LOGE("model or runtime is nullptr!\n");
+                return RS_INVALID_PARAM;
+            }
+
+            device_type_ = runtime->device_type_;
+            num_threads_ = runtime->num_thread_;
+
+            auto openvino_model = dynamic_cast<const OpenVINOModel *>(model);
+            if (openvino_model == nullptr) {
+                RS_LOGE("OpenVINOModel is nullptr!\n");
+                return RS_INVALID_MODEL;
+            }
+
             RSJsonHandle json_handle = nullptr;
-            // std::string model_json_path = "D:/Program/rayshape_deploy/model.json";
-            // std::ifstream in(model_json_path, std::ios::binary);
-            // if (!in.is_open())
-            // {
-            //     RS_LOGE("model json file open failed!\n");
-            // }
-            // std::string json_content((std::istreambuf_iterator<char>(in)),
-            // std::istreambuf_iterator<char>()); std::cout << "Read content: " << json_content <<
-            // std::endl;
+            do {
+                // Parse configuration from the packed model's cfg_str_ (JSON configuration)
+                if ((ret = RSJsonCreate(openvino_model->cfg_str_.c_str(), &json_handle))
+                    != RS_SUCCESS) {
+                    RS_LOGE("RSJsonCreate failed:%d\n", ret);
+                    break;
+                }
 
-            // size_t content_size = json_content.size();
-            // void *content = (void *)json_content.c_str();
-            // ret = RSJsonCreate(content, content_size, &json_handle);
-            // if (ret != RS_SUCCESS)
-            // {
-            //     RS_LOGE("RSJsonCreate failed:%d\n", ret);
-            //     return ret;
-            // }
+                if ((ret = ParseInputShapes(json_handle)) != RS_SUCCESS) {
+                    RS_LOGE("ParseInputShapes failed:%d!\n", ret);
+                    break;
+                }
 
-            std::string src_json = R"({
-                "version": "1.0",
-                "description" : "A model for image classification",
-                "ModelConfig" : {
-                "IsDynamic": false,
-                    "MaxShapes" : [
-                {
-                    "name": "image",
-                        "dims" : [
-                            1,
-                                3,
-                                1024,
-                                1024
-                        ]
-                },
-            {
-                "name": "intput1",
-                "dims" : [
-                    1,
-                    3,
-                    1024,
-                    1024
-                ]
-            }
-                    ]
-            },
-                "NetworkConfig": {
-                        "DeviceType": "DEVICE_TYPE_CPU",
-                            "ThreadNum" : 4,
-                            "Precision" : "FP32",
-                            "CachePath" : ""
-                    },
-                    "Others": {}
-            })";
-            device_type_ = DEVICE_TYPE_X86; // 固定设备类型，这个参数实际上通过runtime得到
+                if ((ret = InitWithMemoryContent(openvino_model->xml_content_,
+                                                 openvino_model->bin_content_))
+                    != RS_SUCCESS) {
+                    RS_LOGE("InitWithMemoryContent failed:%d!\n", ret);
+                    break;
+                }
 
-            if ((ret = RSJsonCreate(src_json, &json_handle)) != RS_SUCCESS) // 从加密模型得到
-            {
-                RS_LOGE("RSJsonCreate failed:%d\n", ret);
-                goto __end;
-            }
+                if ((ret = Reshape()) != RS_SUCCESS) {
+                    RS_LOGE("Reshape failed:%d!\n", ret);
+                    break;
+                }
 
-            if ((ret = ParseInputShapes(json_handle)) != RS_SUCCESS) {
-                RS_LOGE("ParseInputShapes failed:%d!\n", ret);
-                goto __end;
-            }
+                if ((ret = CreateBlobArray()) != RS_SUCCESS) {
+                    RS_LOGE("CreateBlobArray failed:%d!\n", ret);
+                    break;
+                }
+            } while (false);
 
-            if ((ret = InitWithXml(xml_path, bin_path)) != RS_SUCCESS) // Init with model
-            {
-                RS_LOGE("InitWithXml failed:%d!\n", ret);
-                goto __end;
-            }
-
-            if ((ret = Reshape()) != RS_SUCCESS) {
-                RS_LOGE("Reshape failed:%d!\n", ret);
-                goto __end;
-            }
-
-            if ((ret = CreateBlobArray()) != RS_SUCCESS) {
-                RS_LOGE("CreateBlobArray failed:%d!\n", ret);
-                goto __end;
-            }
-        __end:
+            // Clean up resources
             if (json_handle != nullptr) {
                 RSJsonDestory(&json_handle);
             }
@@ -124,26 +90,45 @@ namespace rayshape
 
         void OpenVinoNetWork::DeInit() {}
 
-        ErrorCode OpenVinoNetWork::InitWithXml(const std::string &xml_path,
-                                               const std::string &bin_path) {
+        ErrorCode OpenVinoNetWork::InitWithMemoryContent(const std::string &xml_content,
+                                                         const std::string &bin_content) {
             ErrorCode ret = RS_SUCCESS;
-            core_.reset(new ov::Core());
 
-            std::string device_name = "CPU";
-            if (device_type_ == DEVICE_TYPE_X86) {
-                device_name = "CPU";
-            } else {
-                std::string cache_dir = "cache_dir";
-                device_name = "GPU";
-                core_->set_property(ov::cache_dir(cache_dir));
-            }
+            RS_LOGD("OpenVINO model initialization from memory content\n");
+
             try {
-                model_ = core_->read_model(xml_path, bin_path);
+                // Initialize OpenVINO Core if not already done
+                if (core_ == nullptr) {
+                    core_ = std::make_unique<ov::Core>();
+                }
 
-                // compiled_model_ = core_->compile_model(model_, device_name);
-                // infer_request_ = compiled_model_.create_infer_request();
+                // Create a tensor from binary content
+                ov::Tensor weights_tensor;
+                if (!bin_content.empty()) {
+                    weights_tensor = ov::Tensor(ov::element::u8, {bin_content.size()});
+                    std::memcpy(weights_tensor.data<uint8_t>(), bin_content.data(),
+                                bin_content.size());
+                }
+
+                // Load model from memory
+                if (weights_tensor) {
+                    model_ = core_->read_model(xml_content, weights_tensor);
+                } else {
+                    model_ = core_->read_model(xml_content);
+                }
+
+                if (!model_) {
+                    RS_LOGE("Failed to load OpenVINO model from memory content\n");
+                    return RS_MODEL_ERROR;
+                }
+
+                RS_LOGD("OpenVINO model loaded successfully from memory\n");
+
             } catch (const ov::Exception &e) {
-                RS_LOGE("read_model openvino model failed: %s\n", e.what());
+                RS_LOGE("OpenVINO exception during model loading: %s\n", e.what());
+                return RS_MODEL_ERROR;
+            } catch (const std::exception &e) {
+                RS_LOGE("Standard exception during model loading: %s\n", e.what());
                 return RS_MODEL_ERROR;
             }
 
@@ -178,12 +163,12 @@ namespace rayshape
                 }
             }*/
             RSJsonObject model_obj = RSJsonObjectGet(root_obj, "ModelConfig");
-            if (model_obj == NULL) {
+            if (model_obj == nullptr) {
                 RS_LOGE("key ModelConfig's value is empty!\n");
                 return RS_INVALID_PARAM;
             }
             RSJsonObject max_shapes_arr = RSJsonObjectGet(model_obj, "MaxShapes");
-            if (max_shapes_arr == NULL) {
+            if (max_shapes_arr == nullptr) {
                 return RS_SUCCESS;
             }
 
@@ -193,13 +178,13 @@ namespace rayshape
                 RSJsonObject shape_obj = RSJsonArrayAt(max_shapes_arr, i);
                 RSJsonObject name_obj = RSJsonObjectGet(shape_obj, "name");
                 const char *name = RSJsonStringGet(name_obj);
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                if (name == nullptr || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
                     RS_LOGE("InputMaxShape Name is empty or > MAX_DIMS_NAME:%d!\n", MAX_BLOB_NAME);
                     return RS_INVALID_MODEL;
                 }
                 // 获取维度对象
                 RSJsonObject dims_arr = RSJsonObjectGet(shape_obj, "dims");
-                if (dims_arr == NULL) {
+                if (dims_arr == nullptr) {
                     RS_LOGE("InputMaxShape Dims is Error!\n");
                     return RS_INVALID_MODEL;
                 }
@@ -341,8 +326,8 @@ namespace rayshape
             for (const auto input : inputs) {
                 std::string name_str = input.get_any_name();
                 const char *name = name_str.c_str();
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
-                    RS_LOGE("get input name:%s len:%zd failed\n", name != NULL ? name : "",
+                if (name == nullptr || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                    RS_LOGE("get input name:%s len:%zd failed\n", name != nullptr ? name : "",
                             name != NULL ? strlen(name) : 0);
                     ClearBlobArray(); // 清除分配的内存
                     return RS_INVALID_MODEL;
@@ -382,9 +367,9 @@ namespace rayshape
             for (const auto output : outputs) {
                 std::string output_name = output.get_any_name();
                 const char *name = output_name.c_str();
-                if (name == NULL || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
-                    RS_LOGE("get output name:%s len:%zd failed", name != NULL ? name : "",
-                            name != NULL ? strlen(name) : 0);
+                if (name == nullptr || strlen(name) <= 0 || strlen(name) > MAX_BLOB_NAME) {
+                    RS_LOGE("get output name:%s len:%zd failed", name != nullptr ? name : "",
+                            name != nullptr ? strlen(name) : 0);
                     ClearBlobArray();
                     return RS_INVALID_MODEL;
                 }
@@ -503,7 +488,7 @@ namespace rayshape
 
             int index = -1;
             *blob = FindBlobAndIndexByName(input_blob_arr_, input_blob_size_, input_name, &index);
-            if (*blob == NULL) {
+            if (*blob == nullptr) {
                 RS_LOGE("Not find Blob name:%s\n", input_name != nullptr ? input_name : "");
                 return RS_INVALID_PARAM;
             }

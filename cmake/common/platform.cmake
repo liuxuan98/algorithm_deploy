@@ -50,8 +50,8 @@ if(SYSTEM.Linux)
 
     #if()
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        #this is to workaround libgcc.a
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libstdc++")
     endif()
 
     if(PROCESSOR.arm)
@@ -63,7 +63,18 @@ if(SYSTEM.Linux)
             # /user/inlcude/c++/4.9
             # /user/lib/gcc/x86_64-linux-gnu/4.9
         )
-        include_directories(${aarch64_linux_include})
+    endif()
+
+    # Configure static linking for Linux (similar to Windows MT)
+    # Static link libgcc and libstdc++ to reduce runtime dependencies
+    if(ENABLE_STATIC_RUNTIME)
+        if(CMAKE_BUILD_TYPE MATCHES "Release")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+            message(STATUS "Linux: Configured for static linking of runtime libraries")
+        endif()
+    else()
+        message(STATUS "Linux: Using default dynamic runtime library linking")
     endif()
 endif()
 #windows
@@ -77,14 +88,13 @@ if(SYSTEM.Windows)
 
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations -Wno-ignored-attributes")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wno-ignored-attributes")  
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wno-ignored-attributes")
 endif()
 
 #debug or release
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     #set()
     #add_definitions(-DDEBUG) ## notuds
-
 
     if(MSVC)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /DEBUG")
@@ -114,7 +124,7 @@ endif(CMAKE_BUILD_TYPE MATCHES Debug)
 # # symbol hidden //mnn
 if((NOT MSVC) AND ENABLE_SYMBOL_HIDE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden") 
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 
     #Omit frame pointer may cause difficult debug
     if((NOT APPLE) AND (NOT WIN32))
@@ -125,14 +135,54 @@ endif()
 if(MSVC) #添加编译选项中的相关内容
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4819 /wd4018 /utf-8")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4819 /wd4018 /utf-8")
+
+    # Suppress specific warnings for better compilation experience
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996")  # Suppress deprecated function warnings
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267")  # Suppress size_t conversion warnings
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")  # Suppress DLL interface warnings
+
+    # Fix parallel compilation PDB issues
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+
+    # Suppress C++17 deprecation warnings
+    add_definitions(-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+    add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+
+    # Configure MSVC runtime library for static linking (MT/MTd)
+    # Use MT for Release, MTd for Debug to eliminate CRT dependency
+    if(ENABLE_STATIC_RUNTIME)
+        if(CMAKE_BUILD_TYPE MATCHES Debug)
+            set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+        else()
+            set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+        endif()
+        
+        # Set CMAKE_MSVC_RUNTIME_LIBRARY for CMake 3.15+
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.15")
+            if(CMAKE_BUILD_TYPE MATCHES Debug)
+                set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
+            else()
+                set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+            endif()
+        endif()
+        message(STATUS "Windows: Configured for static runtime library linking (MT/MTd)")
+    else()
+        message(STATUS "Windows: Using default dynamic runtime library linking (MD/MDd)")
+    endif()
 endif()
 
 ## cxx_11 //tnn
 if(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-    if(RS_DEPLOY_GLIBCXX_USE_CXX14_ABI_ENABLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX14_ABI=1")
-    elseif(RS_DEPLOY_GLIBCXX_USE_CXX11_ABI_ENABLE)
+    if(ENABLE_GLIBCXX_USE_CXX17_ABI)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1")
+    elseif(ENABLE_GLIBCXX_USE_CXX14_ABI)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1")
+    elseif(ENABLE_GLIBCXX_USE_CXX11_ABI)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1")
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
@@ -185,14 +235,18 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DRW_LIBRARY_POST=${}")
 
 # define
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-  add_definitions(-DNNDEPLOY_DEBUG)
+  add_definitions(-DRSDEPLOY_DEBUG)
 endif()
 
 set(CMAKE_DEPENDS_IN_PROJECT_ONLY ON)
 
 # target path
-set(TARGET_RUN_DIR ${ROOT_PATH}/build/target/${CMAKE_SYSTEM_NAME})
+set(TARGET_RUN_DIR ${CMAKE_BINARY_DIR}/target/${CMAKE_SYSTEM_NAME})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/lib)
+
+# install path
+set(CMAKE_INSTALL_PREFIX ${TARGET_RUN_DIR} CACHE PATH "Install path prefix" FORCE)
+message(STATUS "\tCMAKE_INSTALL_PREFIX is":${CMAKE_INSTALL_PREFIX})
 
 if(SYSTEM.Windows)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/lib)
@@ -209,10 +263,10 @@ elseif(SYSTEM.Darwin)  ## cmake 语法嵌套混乱
     set(CMAKE_INSTALL_RPATH "@executable_path")
 elseif(SYSTEM.Linux)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/lib)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/bin)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\${ORIGIN}/")
-else() 
+    set(CMAKE_INSTALL_RPATH "\${ORIGIN}/../lib")
+else()
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/bin)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_RUN_DIR}/bin)
 endif()
@@ -224,7 +278,7 @@ set(INSTALL_RUN_DIR ${CMAKE_INSTALL_PREFIX}) ## not use del
 set(include_file_dir "${ROOT_PATH}/include/") ##ROOT_PATH 为当前工程根目录
 
 # 如果使用cpack，install的DESTINATION 不要写绝对路径，不然会打进包里 ,相对路径
-install(DIRECTORY ${include_file_dir} DESTINATION include)  
+install(DIRECTORY ${include_file_dir} DESTINATION include)
 
 
 if(SYSTEM.Windows OR SYSTEM.Darwin)
@@ -284,9 +338,6 @@ elseif(SYSTEM.Linux)
 
 endif()
 
-
-
-
 if(SYSTEM.Windows)
     set(copy_target_path "${TARGET_RUN_DIR}/bin/${CMAKE_BUILD_TYPE}")  ## target_path 中所有文件需要打包
     set(copy_install_path "bin/${CMAKE_BUILD_TYPE}")
@@ -345,4 +396,3 @@ if(APPLE)
     ##
     ##
 endif()
-    

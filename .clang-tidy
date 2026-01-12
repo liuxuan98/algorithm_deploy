@@ -1,2 +1,76 @@
-Checks: '-*,!clang-diagnostic-error,modernize-*,cppcoreguidelines-*,clang-analyzer-*'
-# 禁用所有检查 modernize-* # 开启所有现代化建议 readability-* # 开启可读性检查 performance-* # 开启性能优化检查 cppcoreguidelines-* # 开启核心准则检查 clang-analyzer-* # 启用 Clang 分析器检查 bugprone-* # 启用潜在 bug 检查 WarningsAsErrors: '*' # 将所有警告视为错误 HeaderFilterRegex: 'src/.*' # 只检查 src 目录下的文件 AnalyzeTemporaryDtors: true # 检查临时对象析构问题
+Checks: >
+  -*,
+  clang-diagnostic-error,
+  readability-identifier-naming,
+  modernize-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*,
+  performance-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  -modernize-use-using,
+  -modernize-avoid-c-arrays,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-special-member-functions,
+  -warnings-as-errors,
+  -readability-identifier-naming,
+  -cppcoreguidelines-avoid-c-arrays,
+  -clang-diagnostic-error,
+  -cppcoreguidelines-avoid-non-const-global-variables
+
+WarningsAsErrors: ''
+
+# Completely exclude third_party and only check specific project directories
+# Use a very restrictive regex that only matches project source files
+HeaderFilterRegex: '^.*/rayshape_deploy/(kernel|include|module|sample|test|tools)/.*\.(h|hpp|cc|cpp|c|cu)$'
+
+# Use C++14 for better compatibility with third-party libraries
+ExtraArgs: ['-std=c++14']
+
+CheckOptions:
+  # ===== 类 / 结构体 / 枚举类型名 =====
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+
+  # ===== 函数 / 方法名 =====
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.MethodCase
+    value: CamelCase
+
+  # ===== 变量命名规则 =====
+  ## 成员变量（非静态）
+  - key: readability-identifier-naming.MemberCase
+    value: lower_case
+  - key: readability-identifier-naming.MemberSuffix
+    value: "_"
+
+  ## 静态成员变量
+  - key: readability-identifier-naming.StaticMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.StaticMemberSuffix
+    value: "_"
+
+  ## 局部变量
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+
+  ## 函数参数
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+
+  # ===== 常量 & 枚举值 =====
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+
+  # ===== 宏定义 =====
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE

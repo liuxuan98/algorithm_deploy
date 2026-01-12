@@ -2,16 +2,16 @@
   define 一些常用的宏
 */
 
-#ifndef _MACROS_H_
-#define _MACROS_H_
+#ifndef MACROS_H
+#define MACROS_H
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 
 #if defined(_WIN32) || defined(__linux__)
-#include <stdint.h>
+#include <cstdint>
 #endif
 
 /*
@@ -42,8 +42,19 @@
  *
  */
 
-#define RS_PI 3.14159265358979323846264338327950288
+static constexpr double RS_PI = 3.14159265358979323846264338327950288;
 
+#ifdef __cplusplus
+// Replace function-like macros with constexpr template functions
+template <typename T> constexpr const T &RS_MIN(const T &x, const T &y) noexcept {
+    return (x < y) ? x : y;
+}
+
+template <typename T> constexpr const T &RS_MAX(const T &x, const T &y) noexcept {
+    return (x > y) ? x : y;
+}
+#else
+// For C code, keep the macro versions
 #ifndef RS_MIN
 #define RS_MIN(x, y) ((x) < (y) ? (x) : (y))
 #endif
@@ -51,6 +62,7 @@
 #ifndef RS_MAX
 #define RS_MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
+#endif // __cplusplus
 
 /**
  * @brief string
@@ -58,4 +70,13 @@
  */
 #define RS_DEFAULT_STR ""
 
-#endif //_MACROS_H_
+// 性能优化 gcc内置函数 apple and unix平台上可用
+#ifdef _ENABLE_LIKELY_
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#define likely
+#define unlikely
+#endif
+
+#endif //_MACROS_H_//#endif // MACROS_H

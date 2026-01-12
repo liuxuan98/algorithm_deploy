@@ -31,7 +31,7 @@ namespace rayshape
         }
         blob->dims = *dims;
 
-        MemoryType mem_type = MEM_TYPE_NONE;
+        MemoryType mem_type = MemoryType::NONE;
         auto ret = ConvertDeviceTypeToMemory(device_type, mem_type);
         if (ret != RS_SUCCESS) {
             RS_LOGE("ConvertDeviceTypeToMemory failed\n");
@@ -40,7 +40,7 @@ namespace rayshape
             return nullptr;
         }
         size_t size = CalculateDims(blob->dims);
-        RSMemoryInfo mem_info{ mem_type, data_type, size };
+        RSMemoryInfo mem_info{mem_type, data_type, static_cast<unsigned int>(size)};
         Buffer *buffer = nullptr;
         buffer = Buffer::Alloc(mem_info);
         if (buffer == nullptr) {
@@ -72,15 +72,31 @@ namespace rayshape
             return RS_INVALID_PARAM;
         }
 
-        if (dst_blob->buffer == nullptr || src_blob->buffer == nullptr) {
-            RS_LOGE("src:%p or dst:%p Blob buffer is null.\n", dst_blob->buffer, src_blob->buffer);
+        if ((dst_blob->data_type != src_blob->data_type)
+            || (dst_blob->data_format != src_blob->data_format)) {
+            RS_LOGE("src blob data_type:%d,data_format:%d;dst blob data_type:%d,data_format:%d.\n",
+                    src_blob->data_type, src_blob->data_format, dst_blob->data_type,
+                    dst_blob->data_format);
             return RS_INVALID_PARAM;
         }
 
-        // match size
-        if (dst_blob->buffer->GetDataSize() != src_blob->buffer->GetDataSize()) {
+        Buffer *src_buf = src_blob->buffer;
+        Buffer *dst_buf = dst_blob->buffer;
+
+        if (dst_buf == nullptr || src_buf == nullptr) {
+            RS_LOGE("src:%p or dst:%p Blob buffer is null.\n", src_buf, dst_buf);
+            return RS_INVALID_PARAM;
+        }
+
+        if (dst_buf == src_buf) {
+            RS_LOGE("dst_blob and src_blob are the same pointer.\n");
+            return RS_INVALID_PARAM;
+        }
+
+        // match size or check dims.
+        if (dst_buf->GetDataSize() != src_buf->GetDataSize()) {
             RS_LOGE("Destination buffer size (%zu) < source buffer size (%zu)\n",
-                    dst_blob->buffer->GetDataSize(), src_blob->buffer->GetDataSize());
+                    dst_buf->GetDataSize(), src_buf->GetDataSize());
             return RS_INVALID_PARAM_VALUE;
         }
 
@@ -88,74 +104,91 @@ namespace rayshape
         DeviceType src_device_type = src_blob->device_type;
         DeviceType dst_device_type = dst_blob->device_type;
 
-        AbstractDevice *device = GetDevice(src_device_type);
-
-        if (device == nullptr) {
-            RS_LOGE("Failed to get device for type %d", src_device_type);
+        AbstractDevice *src_device = GetDevice(src_device_type);
+        AbstractDevice *dst_device = GetDevice(dst_device_type);
+        if (src_device == nullptr || dst_device == nullptr) {
+            RS_LOGE("src blob device:%d or dst blob device:%d not get.\n", src_device_type,
+                    dst_device_type);
             return RS_DEVICE_INVALID;
         }
 
-        // 如果是不同设备，需要中间拷贝到 CPU 再转到目标设备
-        if (src_device_type != dst_device_type) {
-            // 创建临时 CPU blob 缓冲区
-            Blob *cpu_blob = BlobAlloc(DEVICE_TYPE_X86, src_blob->data_type, src_blob->data_format,
+        if (src_device_type == dst_device_type) {
+            ret = src_device->Copy(src_buf, dst_buf, nullptr);
+            if (ret != RS_SUCCESS) {
+                RS_LOGE("Copy from src blob to dst blob failed.\n");
+                return ret;
+            }
+        } else if (IsHostDeviceType(src_device_type) && IsHostDeviceType(dst_device_type)) {
+            ret = src_device->Copy(src_buf, dst_buf, nullptr);
+            if (ret != RS_SUCCESS) {
+                RS_LOGE("Copy from src blob to dst blob failed.\n");
+                return ret;
+            }
+        } else if (IsHostDeviceType(src_device_type) && !IsHostDeviceType(dst_device_type)) {
+            ret = dst_device->CopyToDevice(src_buf, dst_buf, nullptr);
+            if (ret != RS_SUCCESS) {
+                RS_LOGE("CopyToDevice from src blob to dst blob failed.\n");
+                return ret;
+            }
+        } else if (!IsHostDeviceType(src_device_type) && IsHostDeviceType(dst_device_type)) {
+            ret = src_device->CopyFromDevice(src_buf, dst_buf, nullptr);
+            if (ret != RS_SUCCESS) {
+                RS_LOGE("CopyFromDevice from src blob to dst blob failed.\n");
+                return ret;
+            }
+        } else {
+            // different type Heterogeneous Computing device.
+            DeviceType host_divice_type = DeviceType::CPU;
+            AbstractDevice *host_device = GetDevice(host_divice_type);
+            if (host_device == nullptr) {
+                RS_LOGE("host device is invalid.\n");
+                return RS_DEVICE_INVALID;
+            }
+            // Create temporary Host blob as intermediate
+            Blob *cpu_blob = BlobAlloc(host_divice_type, src_blob->data_type, src_blob->data_format,
                                        "temp_cpu_blob", &src_blob->dims);
             if (!cpu_blob) {
                 RS_LOGE("Failed to allocate temporary CPU blob\n");
                 return RS_OUTOFMEMORY;
             }
 
-            // 1. 设备 -> CPU
-            if ((ret = device->CopyToDevice(cpu_blob->buffer, src_blob->buffer, nullptr))
+            // 1.src device to cpu
+            if ((ret = src_device->CopyFromDevice(src_buf, cpu_blob->buffer, nullptr))
                 != RS_SUCCESS) {
                 RS_LOGE("Failed to copy from source device to CPU: %d\n", ret);
                 BlobFree(cpu_blob);
                 return ret;
             }
 
-            // 2. CPU -> 目标设备
-            device = GetDevice(dst_device_type);
-            if (!device) {
-                RS_LOGE("Failed to get target device %d", dst_device_type);
-                BlobFree(cpu_blob);
-                return RS_DEVICE_INVALID;
-            }
-
-            if ((ret = device->CopyToDevice(dst_blob->buffer, cpu_blob->buffer, nullptr))
+            // 2.cpu to dst device
+            if ((ret = dst_device->CopyToDevice(cpu_blob->buffer, dst_buf, nullptr))
                 != RS_SUCCESS) {
-                RS_LOGE("Failed to copy from CPU to destination device: %d", ret);
+                RS_LOGE("Failed to copy CPU to dst device: %d\n", ret);
                 BlobFree(cpu_blob);
                 return ret;
             }
 
             BlobFree(cpu_blob);
-        } else {
-            // 同设备类型，直接拷贝
-            if ((ret = device->Copy(dst_blob->buffer, src_blob->buffer, nullptr)) != RS_SUCCESS) {
-                RS_LOGE("Failed to copy within same device: %d.\n", ret);
-                return ret;
-            }
         }
 
         return ret;
     }
 
-    ErrorCode BlobFree(Blob *blob) { // 线程不安全，智能指针封装
-
-        if (!blob) {
-            RS_LOGE("Blob pointer is null");
+    ErrorCode BlobFree(Blob *blob) { // no safe for threads. shared_ptr holder
+        if (blob == nullptr) {
+            RS_LOGE("Blob pointer is null\n");
             return RS_INVALID_PARAM;
         }
-
-        // 如果 buffer 不为 nullptr，则释放它
+        // if buffer is not nullptr, otherwise delete it.
         if (blob->buffer != nullptr) {
             delete blob->buffer;
             blob->buffer = nullptr;
+        } else {
+            RS_LOGE("Blob buffer pointer is null\n");
+            return RS_INVALID_PARAM;
         }
-
-        // 释放 Blob 结构体本身
+        // delete Blob struct
         free(blob);
-
         return RS_SUCCESS;
     }
 
