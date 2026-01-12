@@ -1,0 +1,1 @@
+ONNXRuntime version 1.18.0 for cuda 12.x and cudnn 8.x

@@ -1,0 +1,1 @@
+opencv version 4.5.2 opencv-world-4.5.2.lib
