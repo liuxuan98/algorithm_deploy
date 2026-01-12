@@ -1,28 +1,90 @@
-# 前缀 lib  后缀 .so .a .dll、.dylib 依据平台进行判断链接 和 动态库还是静态库进行连接 ，要求统一动态库
+# OpenVINO CMake configuration using find_package
+# This configuration supports cross-platform deployment (Linux/Windows)
 
-# 定义宏：自动配置 OpenVINO 头文件与库
-macro(set_openvino_lib)
+# Set CMake policy for find_package to use _ROOT variables
+cmake_policy(SET CMP0074 NEW)
 
-    set(openvino_lib) #全局存放变量
+# Set the root path if not already defined
+if(NOT ROOT_PATH)
+    set(ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+endif()
 
-    set(libs "openvino")
-    #包含头文件
-    set(openvino_include_dir ${ROOT_PATH}/third_party/openvino/include)
-    include_directories(${openvino_include_dir})
+# Set platform-specific OpenVINO directory and architecture
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(OpenVINO_ROOT ${ROOT_PATH}/third_party/openvino/Linux/x86_64/runtime)
+    set(OPENVINO_CMAKE_DIR ${OpenVINO_ROOT}/cmake)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(OpenVINO_ROOT ${ROOT_PATH}/third_party/openvino/Windows/AMD64)
+    set(OPENVINO_CMAKE_DIR ${OpenVINO_ROOT}/cmake)
+else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+endif()
 
-    #根据平台拼接库 openvino_lib_path 会有不同变化
-    set(openvino_lib_path ${ROOT_PATH}/third_party/openvino/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}/lib/${CMAKE_BUILD_TYPE})
-    
-    foreach(lib ${libs})
-        set(lib_name ${LIB_PREFIX}${lib}${LIB_SUFFIX})
-        set(full_lib_name ${openvino_lib_path}/${lib_name})
-        list(APPEND openvino_lib ${full_lib_name})
-    endforeach()    
+# Debug information
+message(STATUS "OpenVINO platform directory: ${OpenVINO_ROOT}")
+message(STATUS "OpenVINO CMake directory: ${OPENVINO_CMAKE_DIR}")
 
-    unset(lib_name)
-    unset(full_lib_name)
-    unset(openvino_lib_path)
-    unset(openvino_include_dir)
-    unset(libs)
+# Verify that the OpenVINO installation exists
+if(NOT EXISTS ${OPENVINO_CMAKE_DIR}/OpenVINOConfig.cmake)
+    message(FATAL_ERROR "OpenVINO installation not found at: ${OpenVINO_ROOT}")
+endif()
 
-endmacro()
+# Use find_package to locate OpenVINO
+find_package(OpenVINO REQUIRED
+    PATHS ${OPENVINO_CMAKE_DIR}
+    NO_DEFAULT_PATH
+)
+
+if(OpenVINO_FOUND)
+    message(STATUS "OpenVINO found successfully!")
+    message(STATUS "OpenVINO version: ${OpenVINO_VERSION}")
+
+    # Include directories
+    set(openvino_include_dir ${OpenVINO_ROOT}/include)
+
+    # Log the available targets
+    message(STATUS "OpenVINO Runtime target: openvino::runtime")
+
+    # Create a macro for backward compatibility with existing build system
+    macro(set_openvino_lib)
+        # Use the modern OpenVINO targets
+        set(openvino_lib openvino::runtime)
+        set(openvino_include_dir ${OpenVINO_ROOT}/include)
+
+        message(STATUS "OpenVINO libraries configured using modern CMake targets")
+    endmacro()
+
+    # Function to configure OpenVINO includes for a target
+    function(target_link_openvino target_name)
+        target_link_libraries(${target_name} PRIVATE openvino::runtime)
+        target_include_directories(${target_name}
+            SYSTEM PRIVATE
+                ${openvino_include_dir}
+                ${openvino_include_dir}/ie
+        )
+
+        # Set RPATH for OpenVINO dynamic libraries
+        if(UNIX AND NOT APPLE)
+            set(OPENVINO_LIB_PATH ${OpenVINO_ROOT}/lib/intel64)
+            if(EXISTS ${OPENVINO_LIB_PATH})
+                # Get existing RPATH if any
+                get_target_property(EXISTING_RPATH ${target_name} INSTALL_RPATH)
+                if(EXISTING_RPATH)
+                    set(NEW_RPATH "${EXISTING_RPATH};${OPENVINO_LIB_PATH}")
+                else()
+                    set(NEW_RPATH "${OPENVINO_LIB_PATH}")
+                endif()
+
+                set_target_properties(${target_name} PROPERTIES
+                    INSTALL_RPATH "${NEW_RPATH}"
+                    BUILD_WITH_INSTALL_RPATH TRUE
+                )
+                target_link_directories(${target_name} PRIVATE ${OPENVINO_LIB_PATH})
+                message(STATUS "OpenVINO RPATH set to: ${OPENVINO_LIB_PATH}")
+            endif()
+        endif()
+    endfunction()
+
+else()
+    message(FATAL_ERROR "OpenVINO not found in ${OPENVINO_CMAKE_DIR}")
+endif()

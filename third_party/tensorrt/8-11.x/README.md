@@ -1,0 +1,1 @@
+TensorRT version 8.6.1.6 for CUDA 11.0 to 11.8

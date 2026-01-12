@@ -1,0 +1,1 @@
+TensorRT version 7.2.3.4 for Windows 10/Ubuntu 18.04 and CUDA 11.0.3

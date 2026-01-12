@@ -1,0 +1,1 @@
+cuDNN version 8.1.0.77 for CUDA 11.0, 11.1 and 11.2
