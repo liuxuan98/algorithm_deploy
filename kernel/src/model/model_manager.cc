@@ -1,7 +1,7 @@
 /**
  * @file model_manager.cc
  * @brief Model loading and management utility implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright
  */
 
 #include "model/model_manager.h"
