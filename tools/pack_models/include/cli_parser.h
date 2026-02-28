@@ -24,13 +24,15 @@ namespace rayshape
          */
         enum class CommandType {
             NONE,
-            SERIALIZE, // Serialize individual model
-            PACKAGE,   // Create model package
-            EXTRACT,   // Extract model package
-            LIST,      // List package contents
-            INFO,      // Show package info
-            VALIDATE,  // Validate package
-            HELP       // Show help
+            SERIALIZE,   // Serialize individual model
+            DESERIALIZE, // Deserialize model file back to original format
+            PACKAGE,     // Create model package
+            EXTRACT,     // Extract model package
+            LIST,        // List package contents
+            INFO,        // Show package info
+            VALIDATE,    // Validate package
+            DECODE,      // Decode encrypted model file
+            HELP         // Show help
         };
 
         /**

@@ -176,16 +176,20 @@ namespace rayshape
 
             std::cout << "COMMANDS:\n";
             std::cout << "  serialize    Serialize individual model files\n";
+            std::cout << "  deserialize  Deserialize model files back to original format\n";
             std::cout << "  package      Create model package from multiple files\n";
             std::cout << "  extract      Extract model package\n";
             std::cout << "  list         List package contents\n";
             std::cout << "  info         Show package information\n";
             std::cout << "  validate     Validate package integrity\n";
+            std::cout << "  decode       Decode encrypted model files\n";
             std::cout << "  help         Show this help message\n\n";
 
             ShowCommandUsage(CommandType::SERIALIZE);
+            ShowCommandUsage(CommandType::DESERIALIZE);
             ShowCommandUsage(CommandType::PACKAGE);
             ShowCommandUsage(CommandType::EXTRACT);
+            ShowCommandUsage(CommandType::DECODE);
             ShowCommandUsage(CommandType::LIST);
             ShowCommandUsage(CommandType::INFO);
             ShowCommandUsage(CommandType::VALIDATE);
@@ -202,7 +206,9 @@ namespace rayshape
 
             std::cout << "MODEL TYPES:\n";
             std::cout << "  mnn          MNN model format\n";
-            std::cout << "  openvino     OpenVINO model format\n\n";
+            std::cout << "  openvino     OpenVINO model format\n";
+            std::cout << "  onnx         ONNX model format\n";
+            std::cout << "  tensorrt     TensorRT model format\n\n";
 
             std::cout << "EXAMPLES:\n";
             std::cout << "  # Serialize MNN model\n";
@@ -215,13 +221,29 @@ namespace rayshape
                 << "  " << TOOL_NAME
                 << " serialize -t openvino --xml model.xml --bin model.bin --config config.json -o model_serialized.rsm\n\n";
 
+            std::cout << "  # Serialize ONNX model\n";
+            std::cout
+                << "  " << TOOL_NAME
+                << " serialize -t onnx -i model.onnx --config config.json -o model_serialized.rsm\n\n";
+
+            std::cout << "  # Serialize TensorRT model\n";
+            std::cout
+                << "  " << TOOL_NAME
+                << " serialize -t tensorrt -i model.trt --config config.json -o model_serialized.rsm\n\n";
+
+            std::cout << "  # Deserialize model back to original format\n";
+            std::cout << "  " << TOOL_NAME << " deserialize -i model_serialized.rsm -o restored_models/\n\n";
+
             std::cout << "  # Create package\n";
             std::cout
                 << "  " << TOOL_NAME
                 << " package -n \"My Model\" --version \"1.0\" -d \"Description\" --files model1.rsm model2.rsm -o package.rsmp\n\n";
 
             std::cout << "  # Extract package\n";
-            std::cout << "  " << TOOL_NAME << " extract -i package.rsmp -o output_dir/\n";
+            std::cout << "  " << TOOL_NAME << " extract -i package.rsmp -o output_dir/\n\n";
+
+            std::cout << "  # Decode encrypted model\n";
+            std::cout << "  " << TOOL_NAME << " decode -i encrypted_model.rsm -o decrypted_model.rsm\n";
 
             std::cout << "Platform: " << utils::PlatformUtils::GetPlatformName() << "\n";
         }
@@ -255,6 +277,8 @@ namespace rayshape
         CommandType CLIParser::ParseCommand(const std::string &command_str) const {
             if (command_str == "serialize" || command_str == "s") {
                 return CommandType::SERIALIZE;
+            } else if (command_str == "deserialize" || command_str == "deser" || command_str == "ds") {
+                return CommandType::DESERIALIZE;
             } else if (command_str == "package" || command_str == "pack" || command_str == "p") {
                 return CommandType::PACKAGE;
             } else if (command_str == "extract" || command_str == "e") {
@@ -265,6 +289,8 @@ namespace rayshape
                 return CommandType::INFO;
             } else if (command_str == "validate" || command_str == "check" || command_str == "v") {
                 return CommandType::VALIDATE;
+            } else if (command_str == "decode" || command_str == "decrypt" || command_str == "d") {
+                return CommandType::DECODE;
             } else if (command_str == "help" || command_str == "h") {
                 return CommandType::HELP;
             }
@@ -298,6 +324,17 @@ namespace rayshape
                         SetError("Input path required for serialize command");
                         return false;
                     }
+                }
+                break;
+
+            case CommandType::DESERIALIZE:
+                if (args.input_path.empty()) {
+                    SetError("Input RSM file path required for deserialize command");
+                    return false;
+                }
+                if (args.output_path.empty()) {
+                    SetError("Output directory required for deserialize command");
+                    return false;
                 }
                 break;
 
@@ -336,6 +373,17 @@ namespace rayshape
                 }
                 break;
 
+            case CommandType::DECODE:
+                if (args.input_path.empty()) {
+                    SetError("Input model file path required for decode command");
+                    return false;
+                }
+                if (args.output_path.empty()) {
+                    SetError("Output file path required for decode command");
+                    return false;
+                }
+                break;
+
             case CommandType::HELP:
                 // No validation needed
                 break;
@@ -359,13 +407,23 @@ namespace rayshape
                 std::cout << "  " << TOOL_NAME
                           << " serialize -t <type> -i <input> -o <output> [options]\n";
                 std::cout << "  Options:\n";
-                std::cout << "    -t, --type <type>         Model type (mnn, openvino)\n";
+                std::cout << "    -t, --type <type>         Model type (mnn, openvino, onnx, tensorrt)\n";
                 std::cout << "    -i, --input <path>        Input model file\n";
                 std::cout << "    -o, --output <path>       Output serialized file\n";
-                std::cout << "                        --xml <path>              XML file (OpenVINO only)\n";
+                std::cout << "    --xml <path>              XML file (OpenVINO only)\n";
                 std::cout << "    --bin <path>              BIN file (OpenVINO only)\n";
                 std::cout << "    --config <path>           Configuration JSON file (required)\n";
                 std::cout << "    --encrypt                 Enable automatic encryption\n\n";
+                break;
+
+            case CommandType::DESERIALIZE:
+                std::cout << "DESERIALIZE:\n";
+                std::cout << "  " << TOOL_NAME
+                          << " deserialize -i <rsm_file> -o <output_dir>\n";
+                std::cout << "  Options:\n";
+                std::cout << "    -i, --input <path>        Input RSM model file\n";
+                std::cout << "    -o, --output <path>       Output directory for original files\n";
+                std::cout << "                              (Automatically detects model type and creates appropriate files)\n\n";
                 break;
 
             case CommandType::PACKAGE:
@@ -410,6 +468,15 @@ namespace rayshape
                 std::cout << "  " << TOOL_NAME << " validate -i <package>\n";
                 std::cout << "  Options:\n";
                 std::cout << "    -i, --input <path>        Input package file\n\n";
+                break;
+
+            case CommandType::DECODE:
+                std::cout << "DECODE:\n";
+                std::cout << "  " << TOOL_NAME << " decode -i <encrypted_file> -o <output_file>\n";
+                std::cout << "  Options:\n";
+                std::cout << "    -i, --input <path>        Input encrypted model file (.rsm)\n";
+                std::cout << "    -o, --output <path>       Output decrypted file\n";
+                std::cout << "                              (Automatically detects RAEC/RENC encryption)\n\n";
                 break;
 
             default:

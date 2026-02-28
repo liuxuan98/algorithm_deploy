@@ -45,7 +45,7 @@ namespace rayshape
                 std::ostringstream package_stream(std::ios::binary);
 
                 // Determine package magic based on encryption
-                const char* magic = auto_encrypt ? "RSME" : PACKAGE_MAGIC;
+                const char* magic = auto_encrypt ? "RSME" : PACKAGE_MAGIC; // Model Encrypted
 
                 // Write package header
                 package_stream.write(magic, 4);
@@ -176,17 +176,9 @@ namespace rayshape
                 // Check if this is an encrypted package
                 if (package_data.size() >= 4) {
                     std::string file_magic(package_data.begin(), package_data.begin() + 4);
-                    if (file_magic == "RENC") {
+                    if (file_magic == "RENC" || file_magic == "RAEC") {
                         // This is encrypted data, need to decrypt first
                         // Auto-decryption doesn't require password
-
-                        rayshape::utils::codec::EncryptedData encrypted_data;
-                        if (!rayshape::utils::codec::CryptoUtils::DeserializeEncryptedData(package_data, encrypted_data)) {
-                            SetError("Failed to deserialize encrypted package: " + rayshape::utils::codec::CryptoUtils::GetLastError());
-                            return false;
-                        }
-
-                        // TODO: Replace with AutoCrypto
                         if (!rayshape::utils::codec::AutoCrypto::AutoDecrypt(package_data, decrypted_data)) {
                             SetError("Failed to auto-decrypt package: " + rayshape::utils::codec::AutoCrypto::GetLastError());
                             return false;
@@ -543,7 +535,7 @@ namespace rayshape
             // Check if this is an encrypted package
             if (package_data.size() >= 4) {
                 std::string file_magic(package_data.begin(), package_data.begin() + 4);
-                if (file_magic == "RENC") {
+                if (file_magic == "RENC" || file_magic == "RAEC") {
                     // This is encrypted data, need to decrypt first
                     // Auto-decrypt the package
                     if (!rayshape::utils::codec::AutoCrypto::AutoDecrypt(package_data, decrypted_data)) {
