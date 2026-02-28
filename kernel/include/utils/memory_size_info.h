@@ -1,7 +1,7 @@
 // 内存计算function 工具
 
-#ifndef _MEMORY_SIZE_INFO_H_
-#define _MEMORY_SIZE_INFO_H_
+#ifndef MEMORY_SIZE_INFO_H
+#define MEMORY_SIZE_INFO_H
 
 #include "type_utils.h"
 #include "memory_manager/blob.h"
@@ -34,4 +34,4 @@ namespace rayshape
     } // namespace utils
 } // namespace rayshape
 
-#endif
+#endif // MEMORY_SIZE_INFO_H

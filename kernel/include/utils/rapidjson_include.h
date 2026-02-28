@@ -1,7 +1,6 @@
 #ifndef _RAPIDJSON_INCLUDE_H_
 #define _RAPIDJSON_INCLUDE_H_
 
-
 // #ifdef ENABLE_RAPIDJSON
 
 #include <rapidjson/document.h>

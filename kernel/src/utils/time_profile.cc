@@ -12,13 +12,14 @@
 
 // develop
 #include "utils/time_profile.h"
+#include "utils/file_utils.h"
 
 namespace rayshape
 {
     namespace utils
     {
 
-#ifdef RS_ENABLE_TIME_PROFILE
+#ifdef ENABLE_TIME_PROFILER
 
         using std::chrono::duration_cast;
         using std::chrono::microseconds;
@@ -217,8 +218,8 @@ namespace rayshape
             strftime(dairy, sizeof(dairy), "%Y-%m-%d-%H_%M_%S", localtime(&timep));
             std::string full_name = name_file + "_" + "time_profile_" + dairy + ".csv";
             // if directory not exist, create it
-            std::string file_parent_dir = fileUtils::GetFileParentPath(full_name, false);
-            fileUtils::MakeDirectory(file_parent_dir);
+            std::string file_parent_dir = GetFileParentPath(full_name, false);
+            MakeDirectory(file_parent_dir);
 
             std::ofstream outfile(full_name, std::ios::out);
             if (outfile.is_open()) {
@@ -357,7 +358,7 @@ namespace rayshape
             return time_profile->DownloadTimeProfile(name_file);
         }
 
-#endif // RS_ENABLE_TIME_PROFILE
+#endif // ENABLE_TIME_PROFILER
 
     } // namespace utils
 } // namespace rayshape

@@ -1,5 +1,5 @@
-#ifndef _JSON_UTILS_H_
-#define _JSON_UTILS_H_
+#ifndef JSON_UTILS_H
+#define JSON_UTILS_H
 
 #include "base/error.h"
 #include "rapidjson_include.h"
@@ -28,6 +28,8 @@ namespace rayshape
 
         int RSJsonIntGet(RSJsonObject int_object, int default_value);
 
+        bool RSJsonBoolGet(RSJsonObject bool_object, bool default_value);
+
         RSJsonObject RSJsonArrayAt(RSJsonObject arr_object, unsigned int index);
 
         unsigned int RSJsonArraySize(const RSJsonObject arr_object);
@@ -35,4 +37,4 @@ namespace rayshape
     } // namespace utils
 } // namespace rayshape
 
-#endif
+#endif // JSON_UTILS_H

@@ -59,4 +59,4 @@ namespace rayshape
     } // namespace utils
 } // namespace rayshape
 
-#endif
+#endif // BLOB_UTILS_H

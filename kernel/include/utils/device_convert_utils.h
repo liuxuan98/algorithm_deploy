@@ -1,5 +1,5 @@
-#ifndef _DEVICE_CONVERT_UTILS_H_
-#define _DEVICE_CONVERT_UTILS_H_
+#ifndef DEVICE_CONVERT_UTILS_H
+#define DEVICE_CONVERT_UTILS_H
 
 #include "base/common.h"
 #include "base/error.h"
@@ -16,4 +16,4 @@ namespace rayshape
     } // namespace utils
 } // namespace rayshape
 
-#endif
+#endif // DEVICE_CONVERT_UTILS_H
