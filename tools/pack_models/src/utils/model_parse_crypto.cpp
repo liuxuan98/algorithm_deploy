@@ -1,7 +1,7 @@
 /**
  * @file model_parse_crypto.cpp
  * @brief Model parsing with encryption support implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) 
  */
 
 #include "utils/model_parse_crypto.h"

@@ -1,7 +1,7 @@
 /**
  * @file auto_crypto.cpp
  * @brief Automatic encryption/decryption utility implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  */
 
 #include "utils/codec/auto_crypto.h"

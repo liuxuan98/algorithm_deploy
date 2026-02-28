@@ -1,7 +1,7 @@
 /**
  * @file inference.h
  * @brief 推理引擎管理的抽象模块
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  *
  *
  * @author Liuxuan

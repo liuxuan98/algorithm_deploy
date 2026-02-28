@@ -306,4 +306,4 @@ echo "Creating encrypted batch package..."
 
 ## 许可证
 
-Copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+.

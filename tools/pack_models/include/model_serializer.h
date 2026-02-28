@@ -1,7 +1,7 @@
 /**
  * @file model_serializer.h
  * @brief Model serialization utility for packing models
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #ifndef PACK_MODELS_MODEL_SERIALIZER_H_

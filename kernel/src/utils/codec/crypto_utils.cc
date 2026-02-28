@@ -1,7 +1,7 @@
 /**
  * @file crypto_utils.cpp
  * @brief Cryptographic utility functions implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  */
 
 #include "utils/codec/crypto_utils.h"

@@ -1,7 +1,7 @@
 /**
  * @file model_parse_crypto.h
  * @brief Model parsing with encryption support for pack_models tool
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #ifndef PACK_MODELS_UTILS_MODEL_PARSE_CRYPTO_H_

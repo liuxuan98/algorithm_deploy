@@ -1,7 +1,7 @@
 /**
  * @file file_utils.cpp
  * @brief Cross-platform file utility functions implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #include "utils/file_utils.h"

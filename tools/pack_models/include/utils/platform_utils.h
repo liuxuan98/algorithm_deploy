@@ -1,7 +1,7 @@
 /**
  * @file platform_utils.h
  * @brief Cross-platform utility functions
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #ifndef PACK_MODELS_UTILS_PLATFORM_UTILS_H_

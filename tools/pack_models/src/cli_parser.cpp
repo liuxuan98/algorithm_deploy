@@ -1,7 +1,7 @@
 /**
  * @file cli_parser.cpp
  * @brief Command line interface parser implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #include "cli_parser.h"

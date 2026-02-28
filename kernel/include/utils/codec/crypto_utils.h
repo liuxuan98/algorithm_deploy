@@ -1,7 +1,7 @@
 /**
  * @file crypto_utils.h
  * @brief Cryptographic utility functions for model encryption/decryption
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  */
 
 #ifndef RAYSHAPE_KERNEL_UTILS_CODEC_CRYPTO_UTILS_H_

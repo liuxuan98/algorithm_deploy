@@ -1,7 +1,7 @@
 /**
  * @file model_packager.h
  * @brief Model packaging utility for creating model packages
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #ifndef PACK_MODELS_MODEL_PACKAGER_H_

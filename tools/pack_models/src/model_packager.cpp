@@ -1,7 +1,7 @@
 /**
  * @file model_packager.cpp
  * @brief Model packaging utility implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #include "model_packager.h"
@@ -45,7 +45,7 @@ namespace rayshape
                 std::ostringstream package_stream(std::ios::binary);
 
                 // Determine package magic based on encryption
-                const char* magic = auto_encrypt ? "RSME" : PACKAGE_MAGIC; // RayShape Model Encrypted
+                const char* magic = auto_encrypt ? "RSME" : PACKAGE_MAGIC;
 
                 // Write package header
                 package_stream.write(magic, 4);

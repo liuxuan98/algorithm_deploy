@@ -1,7 +1,7 @@
 /**
  * @file blob.h
  * @brief 模型输入输出传输blob管道模块
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  *
  *
  * @author Liuxuan

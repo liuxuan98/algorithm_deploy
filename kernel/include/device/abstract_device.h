@@ -1,7 +1,7 @@
 /**
  * @file abstract_device.h
  * @brief 设备内存管理的抽象模块
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  *
  *
  * @author Liuxuan

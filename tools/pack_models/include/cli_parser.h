@@ -1,7 +1,7 @@
 /**
  * @file cli_parser.h
  * @brief Command line interface parser for pack_models tool
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #ifndef PACK_MODELS_CLI_PARSER_H_

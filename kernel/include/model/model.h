@@ -1,7 +1,7 @@
 /**
  * @file model.h
  * @brief 模型管理的抽象模块
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  *
  * @author Liuxuan
  * @email liuxuan@rayshape.com

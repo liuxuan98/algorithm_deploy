@@ -1,7 +1,7 @@
 /**
  * @file auto_crypto.h
  * @brief Automatic encryption/decryption utility with transparent key management
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  */
 
 #ifndef RAYSHAPE_KERNEL_UTILS_CODEC_AUTO_CRYPTO_H_

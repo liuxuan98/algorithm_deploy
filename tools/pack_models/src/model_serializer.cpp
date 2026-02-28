@@ -1,7 +1,7 @@
 /**
  * @file model_serializer.cpp
  * @brief Model serialization utility implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #include "model_serializer.h"

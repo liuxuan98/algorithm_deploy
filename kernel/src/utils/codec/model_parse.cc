@@ -1,7 +1,7 @@
 /**
  * @file model_parse.cc
  * @brief Model parsing implementation
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  */
 
 #include "utils/codec/model_parse.h"

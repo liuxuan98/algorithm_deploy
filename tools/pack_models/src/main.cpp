@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
  * @brief Pack Models Tool main entry point
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright (c) .
  */
 
 #include "cli_parser.h"

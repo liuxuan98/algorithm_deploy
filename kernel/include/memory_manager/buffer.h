@@ -1,7 +1,7 @@
 /**
  * @file buffer.h
  * @brief buffer内存管理模块
- * @copyright (c) 2025 Shenzhen RayShape Medical Technology Co., Ltd.
+ * @copyright .
  *
  *
  * @author Liuxuan
