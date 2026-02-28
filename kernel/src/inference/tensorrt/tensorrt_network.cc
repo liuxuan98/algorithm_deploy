@@ -25,6 +25,9 @@ namespace rayshape
 
         TensorRTNetWork::~TensorRTNetWork() {
             ClearBlobArray();
+            if (stream_) {
+                cudaStreamDestroy(stream_);
+            }
         }
 
         ErrorCode InitBuilderConfigFromJson(const RSJsonHandle &json_handle,
@@ -315,6 +318,11 @@ namespace rayshape
                 }
             }
 
+            if (cudaStreamCreate(&stream_) != cudaSuccess) {
+                RS_LOGE("cuda stream creation failed\n");
+                return RS_MODEL_ERROR;
+            }
+
             return RS_SUCCESS;
         }
 
@@ -545,16 +553,10 @@ namespace rayshape
         }
 
         ErrorCode TensorRTNetWork::Forward() {
-            {
-                cudaStream_t stream;
-                if (cudaStreamCreate(&stream) != cudaSuccess) {
-                    RS_LOGE("cuda stream creation failed\n");
-                    return RS_MODEL_ERROR;
-                }
-
+            if (stream_) {
 // Run TensorRT inference
 #if NV_TENSORRT_MAJOR > 7
-                bool status = exec_ctx_->enqueueV3(stream);
+                bool status = exec_ctx_->enqueueV3(stream_);
 #else
                 bool status = exec_ctx_->enqueueV2(bindings_.data(), stream, nullptr);
 #endif
@@ -562,11 +564,11 @@ namespace rayshape
                     RS_LOGE("TensorRT inference failed\n");
                     return RS_MODEL_ERROR;
                 }
-                cudaStreamSynchronize(stream);
-
-                cudaStreamDestroy(stream);
+                cudaStreamSynchronize(stream_);
+            } else {
+                RS_LOGE("CUDA stream is null\n");
+                return RS_CUDA_TENSORRT_ERROR;
             }
-
             return RS_SUCCESS;
         }
 

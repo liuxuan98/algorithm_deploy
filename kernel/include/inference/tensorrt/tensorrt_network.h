@@ -40,6 +40,7 @@ namespace rayshape
             tensorrt::TrtUniquePtr<nvinfer1::IRuntime> runtime_ = nullptr;
             tensorrt::TrtUniquePtr<nvinfer1::ICudaEngine> engine_ = nullptr;
             tensorrt::TrtUniquePtr<nvinfer1::IExecutionContext> exec_ctx_ = nullptr;
+            cudaStream_t stream_ = nullptr;
 #if NV_TENSORRT_MAJOR <= 7
             std::vector<void *> bindings_;
 #endif
