@@ -138,7 +138,7 @@ namespace rayshape
                     }
                 } else {
                     void *data = src.data(); // 获得浅拷贝指针
-                    size_t size = src.get_byte_size();
+                    size_t size = src.get_size();
                     RSMemoryInfo mem_info{mem_type, blob->data_type,
                                           static_cast<unsigned int>(size)};
                     blob->buffer = Buffer::Create(data, mem_info);

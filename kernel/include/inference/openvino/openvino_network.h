@@ -39,7 +39,8 @@ namespace rayshape
             ErrorCode InitWithXml(const std::string &xml_path, const std::string &bin_path);
 
             ErrorCode InitWithMemoryContent(const std::string &xml_content,
-                                            const std::string &bin_content);
+                                            const std::string &bin_content,
+                                            const std::string &cache_dir);
 
             // ErrorCode InitWithJson(const Model* model, const CustomRuntime *runtime,
             //                        const RSJsonHandle json_handle);
@@ -61,6 +62,8 @@ namespace rayshape
             int num_threads_ = 4;
 
             // std::string model_bin_content_;
+
+            std::string device_name_ = "CPU";
 
             std::shared_ptr<ov::Core> core_ = nullptr;
             std::shared_ptr<ov::Model> model_ = nullptr;

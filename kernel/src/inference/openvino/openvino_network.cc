@@ -40,6 +40,9 @@ namespace rayshape
             }
 
             device_type_ = runtime->device_type_;
+            if (device_type_ == DeviceType::INTERL_GPU) {
+                device_name_ = "GPU";
+            }
             num_threads_ = runtime->num_thread_;
 
             auto openvino_model = dynamic_cast<const OpenVINOModel *>(model);
@@ -62,8 +65,18 @@ namespace rayshape
                     break;
                 }
 
+                RSJsonObject root_obj = RSJsonRootGet(json_handle);
+                RSJsonObject network_config_obj = RSJsonObjectGet(root_obj, "NetworkConfig");
+                RSJsonObject cache_dir_obj = RSJsonObjectGet(network_config_obj, "CachePath");
+                const char *cache_dir = RSJsonStringGet(cache_dir_obj);
+                if (cache_dir == nullptr || strlen(cache_dir) <= 0
+                    || strlen(cache_dir) > MAX_BLOB_NAME) {
+                    RS_LOGE("BuilderConfig CachePath is empty or > MAX_BLOB_NAME:%d!\n",
+                            MAX_BLOB_NAME);
+                    return RS_INVALID_PARAM;
+                }
                 if ((ret = InitWithMemoryContent(openvino_model->xml_content_,
-                                                 openvino_model->bin_content_))
+                                                 openvino_model->bin_content_, cache_dir))
                     != RS_SUCCESS) {
                     RS_LOGE("InitWithMemoryContent failed:%d!\n", ret);
                     break;
@@ -91,7 +104,8 @@ namespace rayshape
         void OpenVinoNetWork::DeInit() {}
 
         ErrorCode OpenVinoNetWork::InitWithMemoryContent(const std::string &xml_content,
-                                                         const std::string &bin_content) {
+                                                         const std::string &bin_content,
+                                                         const std::string &cache_dir) {
             ErrorCode ret = RS_SUCCESS;
 
             RS_LOGD("OpenVINO model initialization from memory content\n");
@@ -100,6 +114,7 @@ namespace rayshape
                 // Initialize OpenVINO Core if not already done
                 if (core_ == nullptr) {
                     core_ = std::make_unique<ov::Core>();
+                    core_->set_property(ov::cache_dir(cache_dir));
                 }
 
                 // Create a tensor from binary content
@@ -262,8 +277,8 @@ namespace rayshape
                     // 重新编译模型
                     model_->reshape(ov_shape_map);
                     // 设置新的形状
-                    compiled_model_ =
-                        core_->compile_model(model_, "CPU"); // 可根据 device_type_ 动态选择设备
+                    compiled_model_ = core_->compile_model(
+                        model_, device_name_); // 可根据 device_type_ 动态选择设备
                     infer_request_ = compiled_model_.create_infer_request();
                     CreateBlobArray();
                 } catch (const ov::Exception &e) {
@@ -296,7 +311,7 @@ namespace rayshape
             }
             // 完成多个最大输入的reshape
             try {
-                compiled_model_ = core_->compile_model(model_, "CPU"); // 是否要reset
+                compiled_model_ = core_->compile_model(model_, device_name_); // 是否要reset
                 infer_request_ = compiled_model_.create_infer_request();
             } catch (const ov::Exception &e) {
                 RS_LOGE("compile openvino model failed: %s\n", e.what());
